@@ -1,31 +1,33 @@
 name: CI
  
-on: push # when to trigger this. Here, on every push
+on: push
 jobs:
   build_and_test:
     name: "Build and test"
     strategy:
       matrix:
         os: [ubuntu-22.04, windows-2025]
-    runs-on: ${{ matrix.os }} # use value from the matrix
+    runs-on: ${{ matrix.os }}
     steps:
+
     - name: Install dependencies (linux)
-      run: sudo apt install ninja-build
-      if: matrix.os == 'ubuntu-22.04' # conditional, runs this step only on the Ubuntu runner
-    - name: Install Ninja (windows)    # Ninja is not available in GitHub-provided images,
-                                       # see https://github.com/actions/runner-images/issues/514
-      run: choco install ninja         # So let's install it through Chocolatey
+      run: sudo apt-get --yes install ninja-build
+      if: matrix.os == 'ubuntu-22.04'
+
+    - name: Install Ninja (windows)   
+      run: choco install ninja        
       if: matrix.os == 'windows-2025'
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.5.2'
-    - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
-    - uses: actions/checkout@v3    # Actually check out the sources. GH Actions can run for events that may not require
-                                   # sources (e.g. when someone comments on an issue)
+        version: '6.9.1'
 
-    # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
+    - uses: ilammy/msvc-dev-cmd@v1
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
     - name: Build
-      # We don't need to set up the environment variable for CMake to see Qt because the install-qt-action
-      # sets up the necessary variables automatically
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Debug
