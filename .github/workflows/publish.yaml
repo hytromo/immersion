@@ -6,7 +6,8 @@ jobs:
     name: "Build and test"
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2025]
+        # os: [ubuntu-24.04, windows-2025]
+        os: [windows-2025]
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -32,21 +33,24 @@ jobs:
     - name: Build
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
-    - name: Run windeployqt to gather dependencies
-      if: matrix.os == 'windows-2025'
-      run: |
-        $exe = "build\\Release\\immersion.exe"
-        & "$Env:QTDIR\\bin\\windeployqt.exe" $exe
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
-    - name: Zip deployment folder
-      if: matrix.os == 'windows-2025'
-      run: |
-        Compress-Archive -Path build\Release\* -DestinationPath build\release-package.zip
+    # - name: Run windeployqt to gather dependencies
+    #   if: matrix.os == 'windows-2025'
+    #   run: |
+    #     $exe = "build\\Release\\immersion.exe"
+    #     & "$Env:QTDIR\\bin\\windeployqt.exe" $exe
 
-    - name: Release
-      if: matrix.os == 'windows-2025'
-      uses: softprops/action-gh-release@v2
-      with:
-        files: build/release-package.zip
-        name: Release ${{ github.ref_name }}
-        body: Release ${{ github.ref_name }}
+    # - name: Zip deployment folder
+    #   if: matrix.os == 'windows-2025'
+    #   run: |
+    #     Compress-Archive -Path build\Release\* -DestinationPath build\release-package.zip
+
+    # - name: Release
+    #   if: matrix.os == 'windows-2025'
+    #   uses: softprops/action-gh-release@v2
+    #   with:
+    #     files: build/release-package.zip
+    #     name: Release ${{ github.ref_name }}
+    #     body: Release ${{ github.ref_name }}
