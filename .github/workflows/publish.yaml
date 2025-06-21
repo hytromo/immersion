@@ -1,47 +1,31 @@
-name: Build Qt Project with CMake
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+name: CI
+ 
+on: push # when to trigger this. Here, on every push
 jobs:
-  build-linux:
-    runs-on: ubuntu-24.04
+  build_and_test:
+    name: "Build and test"
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-2025]
+    runs-on: ${{ matrix.os }} # use value from the matrix
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
+    - name: Install dependencies (linux)
+      run: sudo apt install ninja-build
+      if: matrix.os == 'ubuntu-22.04' # conditional, runs this step only on the Ubuntu runner
+    - name: Install Ninja (windows)    # Ninja is not available in GitHub-provided images,
+                                       # see https://github.com/actions/runner-images/issues/514
+      run: choco install ninja         # So let's install it through Chocolatey
+      if: matrix.os == 'windows-2025'
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.2'
+    - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
+    - uses: actions/checkout@v3    # Actually check out the sources. GH Actions can run for events that may not require
+                                   # sources (e.g. when someone comments on an issue)
 
-      - name: Set up Qt
-        uses: qt/qt-action@v2
-        with:
-          qt-version: '6.9'
-
-      - name: Install CMake
-        run: sudo apt-get install cmake
-
-      - name: Build with CMake
-        run: cmake -B build -S . && cmake --build build
-
-  build-windows:
-    runs-on: windows-2025
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
-      - name: Set up Qt
-        uses: qt/qt-action@v2
-        with:
-          qt-version: '6.9'
-
-      - name: Install CMake
-        run: choco install cmake
-
-      - name: Build with CMake
-        run: cmake -B build -S . && cmake --build build --config Release
+    # Here we call CMake manually, there are solutions for that in the Marketplace: https://github.com/marketplace/actions/run-cmake
+    - name: Build
+      # We don't need to set up the environment variable for CMake to see Qt because the install-qt-action
+      # sets up the necessary variables automatically
+      run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Debug
