@@ -1,0 +1,47 @@
+name: Build Qt Project with CMake
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Qt
+        uses: qt/qt-action@v2
+        with:
+          qt-version: '6.9'
+
+      - name: Install CMake
+        run: sudo apt-get install cmake
+
+      - name: Build with CMake
+        run: cmake -B build -S . && cmake --build build
+
+  build-windows:
+    runs-on: windows-2025
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Qt
+        uses: qt/qt-action@v2
+        with:
+          qt-version: '6.9'
+
+      - name: Install CMake
+        run: choco install cmake
+
+      - name: Build with CMake
+        run: cmake -B build -S . && cmake --build build --config Release
