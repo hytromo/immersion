@@ -32,7 +32,7 @@
 	<url type="bugtracker">https://github.com/hytromo/immersion/issues</url>
 
 	<releases>
-		<release version="1.0.0" date="2025-06-22">
+		<release version="0.0.1" date="2025-06-22">
 			<description>
 				<p>Initial release of Immersion.</p>
 				<ul>

@@ -11,9 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
-# find_package(Qt${QT_VERSION_MAJOR}Keychain CONFIG REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Concurrent)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Concurrent)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -54,8 +53,7 @@ else()
     qt_add_executable(immersion MANUAL_FINALIZATION ${PROJECT_SOURCES})
 endif()
 
-# target_link_libraries(immersion PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)
-target_link_libraries(immersion PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(immersion PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
 target_link_libraries(immersion PRIVATE qt6keychain)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
