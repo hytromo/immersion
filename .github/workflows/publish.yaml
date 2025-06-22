@@ -45,9 +45,9 @@ jobs:
       run: |
         mkdir icons
         for size in 16 32 256; do
-          magick convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
+          magick immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
         done
-        magick convert icons/icon-* icon.ico
+        magick icons/icon-* icon.ico
 
     - name: Generate icons (macos)
       working-directory: resources
@@ -55,7 +55,7 @@ jobs:
       run: |
         mkdir Immersion.iconset
         for size in 16 32 64 128 256 512; do
-          magick convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 Immersion.iconset/icon_${size}x${size}.png;
+          magick immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 Immersion.iconset/icon_${size}x${size}.png;
         done
         iconutil -c icns Immersion.iconset
 
@@ -88,20 +88,15 @@ jobs:
            --icon-size 100 \
            --icon "immersion.app" 100 100 \
            --app-drop-link 380 100 \
-           --dmg-title "Immersion Installer" \
            --overwrite
            build/Release/immersion.dmg \
            build/Release/ \
 
-    - name: Download and install Inno Setup
+    - name: Build Windows Installer using Inno Setup
       if: matrix.os == 'windows-2025'
       run: |
         Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile is.exe
         Start-Process -FilePath .\is.exe -ArgumentList '/VERYSILENT' -Wait
-
-    - name: Build installer with Inno Setup
-      if: matrix.os == 'windows-2025'
-      run: |
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
 
     - name: Release

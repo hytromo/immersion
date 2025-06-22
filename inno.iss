@@ -7,6 +7,7 @@ OutputDir=build\installer
 OutputBaseFilename=ImmersionSetup
 Compression=lzma
 SolidCompression=yes
+SetupIconFile=resources/icon.ico
 
 [Files]
 Source: "build\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
