@@ -40,6 +40,10 @@ jobs:
       shell: bash
       run: |
         mkdir icons
+        # if the magick command is not found, alias it to convert:
+        if ! command -v magick &> /dev/null; then
+          alias magick='convert'
+        fi
         for size in 16 32 64 128 256 512; do
           magick immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
         done
