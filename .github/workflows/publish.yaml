@@ -14,14 +14,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: macos-14
-          #   arch: macos
+          - os: macos-14
+            arch: macos
           - os: windows-2025
             arch: windows-x64
           # - os: windows-11-arm
           #   arch: windows-arm64
-          # - os: ubuntu-24.04
-          #   arch: linux-x64
+          - os: ubuntu-24.04
+            arch: linux-x64
           # - os: ubuntu-24.04-arm
           #   arch: linux-arm64
     runs-on: ${{ matrix.os }}
@@ -99,13 +99,11 @@ jobs:
 
     - name: Build Flatpak
       if: startsWith(matrix.arch, 'linux')
-      id: create_linux_installer
       run: |
         flatpak-builder --force-clean flatpak-build flatpak/io.github.hytromo.immersion.yml
         flatpak build-export flatpak-build-export flatpak-build
         flatpak build-bundle flatpak-build-export Immersion.flatpak io.github.hytromo.immersion
         mv Immersion.flatpak "Immersion-${{ github.ref_name }}-${{ matrix.arch }}.flatpak"
-        echo "path=Immersion-${{ github.ref_name }}-${{ matrix.arch }}.flatpak" >> $GITHUB_OUTPUT
 
     - name: Run windeployqt to gather dependencies
       if: startsWith(matrix.arch, 'windows')
@@ -115,7 +113,6 @@ jobs:
 
     - name: Run macdeployqt to gather dependencies and create installer
       if: matrix.arch == 'macos'
-      id: create_macos_installer
       run: |
         macdeployqt build/Release/immersion.app
         BUILD_RELEASE_DMG=build/Release/Immersion.dmg
@@ -129,12 +126,10 @@ jobs:
           "$BUILD_RELEASE_DMG" \
           build/Release/
         mv "$BUILD_RELEASE_DMG" "Immersion-${{ github.ref_name }}-${{ matrix.arch }}.dmg"
-        echo "path=Immersion-${{ github.ref_name }}-${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
 
 
     - name: Build Windows Installer using Inno Setup
       if: startsWith(matrix.arch, 'windows')
-      id: create_windows_installer
       run: |
         Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile is.exe
         Start-Process -FilePath .\is.exe -ArgumentList '/VERYSILENT' -Wait
@@ -142,25 +137,21 @@ jobs:
         $version = $env:GITHUB_REF_NAME -replace 'v', ''
         $installerName = "ImmersionSetup-${version}-${{ matrix.arch }}.exe"
         Rename-Item -Path "build/installer/ImmersionSetup.exe" -NewName $installerName
-        echo "path=build/installer/$installerName" >> $GITHUB_OUTPUT
-
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
 
     - name: Release Windows
       if: startsWith(matrix.arch, 'windows') && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ steps.create_windows_installer.outputs.path }}
+        files: build/installer/ImmersionSetup*.exe
 
     - name: Release macOS
       if: matrix.arch == 'macos' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ steps.create_macos_installer.outputs.path }}
+        files: Immersion*.dmg
 
     - name: Release Linux (Flatpak)
       if: startsWith(matrix.arch, 'linux') && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ steps.create_linux_installer.outputs.path }}
+        files: Immersion*.flatpak
