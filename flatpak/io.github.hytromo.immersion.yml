@@ -17,15 +17,21 @@ finish-args:
 
 modules:
   - shared-modules/libsecret/libsecret.json
+  # - name: libsecret
+  #   config-opts:
+  #     - -Dmanpage=false
+  #     - -Dvapi=false
+  #     - -Dgtk_doc=false
+  #     - -Dintrospection=false
+  #     - --libdir=lib # make sure it ends up in /app/lib instead of /app/lib64
 
   - name: immersion
     buildsystem: cmake-ninja
     build-options:
       env:
         PKG_CONFIG_PATH: /app/lib64/pkgconfig:${PKG_CONFIG_PATH}
-        CMAKE_PREFIX_PATH: /usr/lib/qt6:/app # Ensure Qt6 is found
+        CMAKE_PREFIX_PATH: /usr/lib/qt6:/app
     config-opts:
-      # Pass the install prefix to your application's build system
       - -DCMAKE_INSTALL_PREFIX=/app
     sources:
       - type: dir
@@ -36,4 +42,13 @@ modules:
       - |
         for size in 16 32 64 128 256 512; do
           install -Dm644 resources/icons/icon-${size}.png /app/share/icons/hicolor/${size}x${size}/apps/${FLATPAK_ID}.png
+        done
+      - |
+        echo "Creating symlinks from /app/lib64 to /app/lib..."
+        find /app/lib64 -maxdepth 1 -name "*.so*" | while read -r lib_path; do
+          lib_name=$(basename "$lib_path")
+          if [ ! -e "/app/lib/$lib_name" ]; then # Only create if it doesn't already exist
+            echo "  Linking $lib_name to /app/lib/"
+            ln -s "$lib_path" "/app/lib/$lib_name"
+          fi
         done

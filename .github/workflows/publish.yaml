@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: [macos-14, windows-2025, ubuntu-24.04]
-        os: [ubuntu-24.04]
+        os: [macos-14, windows-2025, ubuntu-24.04]
+        # os: [ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -91,10 +91,15 @@ jobs:
 
     - name: Build Flatpak
       if: matrix.os == 'ubuntu-24.04'
+      id: create_linux_installer
       run: |
         flatpak-builder --force-clean flatpak-build flatpak/io.github.hytromo.immersion.yml
         flatpak build-export flatpak-build-export flatpak-build
         flatpak build-bundle flatpak-build-export Immersion.flatpak io.github.hytromo.immersion
+        # can use flatpak-builder --run flatpak-build flatpak/io.github.hytromo.immersion.yml sh to debug
+        mv Immersion.flatpak Immersion-${{ github.ref_name }}-linux.flatpak
+        # set output for this step to be used in the release step:
+        echo "::set-output name=path::Immersion-${{ github.ref_name }}-linux.flatpak"
 
     - name: Run windeployqt to gather dependencies
       if: matrix.os == 'windows-2025'
@@ -104,8 +109,10 @@ jobs:
 
     - name: Run macdeployqt to gather dependencies and create installer
       if: matrix.os == 'macos-14'
+      id: create_macos_installer
       run: |
         macdeployqt build/Release/immersion.app
+        BUILD_RELEASE_DMG=build/Release/Immersion.dmg
         create-dmg --volname "Immersion" \
           --window-pos 200 120 \
           --window-size 500 300 \
@@ -113,30 +120,40 @@ jobs:
           --icon "immersion.app" 100 100 \
           --volicon resources/Immersion.icns \
           --app-drop-link 380 100 \
-          build/Release/Immersion.dmg \
+          "$BUILD_RELEASE_DMG" \
           build/Release/
+        echo "::set-output name=path::$BUILD_RELEASE_DMG"
+
 
     - name: Build Windows Installer using Inno Setup
       if: matrix.os == 'windows-2025'
+      id: create_windows_installer
       run: |
         Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile is.exe
         Start-Process -FilePath .\is.exe -ArgumentList '/VERYSILENT' -Wait
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
+        # rename the file to include version and os:
+        $version = $env:GITHUB_REF_NAME -replace 'v', ''
+        $os = 'windows-2025'
+        $installerName = "ImmersionSetup-${version}-${os}.exe"
+        Rename-Item -Path "build/installer/ImmersionSetup.exe" -NewName $installerName
+        # set output for this step to be used in the release step:
+        echo "::set-output name=path::build/installer/$installerName"
 
     - name: Release Windows
       if: matrix.os == 'windows-2025' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: build/installer/ImmersionSetup.exe
+        files: ${{ steps.create_windows_installer.outputs.path }}
 
     - name: Release macOS
       if: matrix.os == 'macos-14' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: build/Release/Immersion.dmg
+        files: ${{ steps.create_macos_installer.outputs.path }}
 
     - name: Release Linux (Flatpak)
       if: matrix.os == 'ubuntu-24.04' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: Immersion.flatpak
+        files: ${{ steps.create_linux_installer.outputs.path }}
