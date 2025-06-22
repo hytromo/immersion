@@ -87,6 +87,7 @@ jobs:
            --window-size 500 300 \
            --icon-size 100 \
            --icon "immersion.app" 100 100 \
+           --volicon resources/Immersion.icns \
            --app-drop-link 380 100 \
            build/Release/immersion.dmg \
            build/Release/ 
