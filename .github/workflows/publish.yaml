@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         # os: [macos-14, windows-2025, ubuntu-22.04]
-        os: [ubuntu-22.04]
+        os: [ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -23,7 +23,7 @@ jobs:
         submodules: 'recursive'
 
     - name: Install dependencies (linux)
-      run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder appstream
+      run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder
       if: matrix.os == 'ubuntu-22.04'
 
     - name: Install Ninja (windows)
@@ -88,15 +88,6 @@ jobs:
       run: |
         sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
         sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
-
-    - name: Cache Flatpak builder
-      if: matrix.os == 'ubuntu-22.04'
-      uses: actions/cache@v4
-      with:
-        path: ~/.var/app/org.flatpak.Builder/cache
-        key: flatpak-builder-cache-${{ hashFiles('flatpak/**') }}
-        restore-keys: |
-          flatpak-builder-cache-
 
     - name: Build Flatpak
       if: matrix.os == 'ubuntu-22.04'
