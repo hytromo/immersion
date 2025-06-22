@@ -19,6 +19,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
 
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
     - name: Generate icons (windows)
       working-directory: resources
       if: matrix.os == 'windows-2025'
@@ -57,10 +61,6 @@ jobs:
         version: '6.9.1'
 
     - uses: ilammy/msvc-dev-cmd@v1
-
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
 
     - name: Build
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
