@@ -9,12 +9,21 @@ jobs:
   build_and_release:
     permissions:
       contents: write
-    name: "Build and release"
+    name: "Build and release on ${{ matrix.os }} (${{ matrix.arch }})"
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-2025, ubuntu-24.04]
-        # os: [ubuntu-24.04]
+        include:
+          - os: macos-14
+            arch: macos
+          - os: windows-2025
+            arch: windows-x64
+          - os: windows-2025-arm64
+            arch: windows-arm64
+          - os: ubuntu-24.04
+            arch: linux-x64
+          - os: ubuntu-24.04-arm64
+            arch: linux-arm64
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -24,19 +33,19 @@ jobs:
 
     - name: Install dependencies (linux)
       run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder
-      if: matrix.os == 'ubuntu-24.04'
+      if: startsWith(matrix.arch, 'linux')
 
     - name: Install Ninja (windows)
       run: choco install ninja imagemagick
-      if: matrix.os == 'windows-2025'
+      if: startsWith(matrix.arch, 'windows')
 
     - name: Install Ninja (mac)
       run: brew install create-dmg imagemagick
-      if: matrix.os == 'macos-14'
+      if: matrix.arch == 'macos'
 
     - name: Generate icons (windows/linux)
       working-directory: resources
-      if: matrix.os == 'windows-2025' || matrix.os == 'ubuntu-24.04'
+      if: startsWith(matrix.arch, 'windows') || startsWith(matrix.arch, 'linux')
       shell: bash
       run: |
         mkdir icons
@@ -48,7 +57,7 @@ jobs:
 
     - name: Generate icons (macos)
       working-directory: resources
-      if: matrix.os == 'macos-14'
+      if: matrix.arch == 'macos'
       run: |
         mkdir Immersion.iconset
         for size in 16 32 64 128 256 512; do
@@ -57,7 +66,7 @@ jobs:
         iconutil -c icns Immersion.iconset
 
     - name: Generate icons (linux/flatpak)
-      if: matrix.os == 'ubuntu-24.04'
+      if: startsWith(matrix.arch, 'linux')
       run: |
         # Assumes your flatpak app-id is io.github.hytromo.immersion
         APP_ID="io.github.hytromo.immersion"
@@ -71,44 +80,44 @@ jobs:
       uses: jurplel/install-qt-action@v4.3.0
       with:
         version: '6.9.1'
-      # Do not install Qt on linux runner, as Flatpak will use its own from the SDK
-      if: matrix.os != 'ubuntu-24.04'
+      if: !startsWith(matrix.arch, 'linux')
 
     - uses: ilammy/msvc-dev-cmd@v1
-      if: matrix.os == 'windows-2025'
+      if: startsWith(matrix.arch, 'windows')
 
     - name: Build
       # Do not run native build for Linux, Flatpak handles its own build process
-      if: matrix.os != 'ubuntu-24.04'
+      if: !startsWith(matrix.arch, 'linux')
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
     # --- Flatpak Build Steps (Linux Only) ---
     - name: Setup Flatpak remote
-      if: matrix.os == 'ubuntu-24.04'
+      if: startsWith(matrix.arch, 'linux')
       run: |
         sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
         sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
 
     - name: Build Flatpak
-      if: matrix.os == 'ubuntu-24.04'
+      if: startsWith(matrix.arch, 'linux')
       id: create_linux_installer
       run: |
         flatpak-builder --force-clean flatpak-build flatpak/io.github.hytromo.immersion.yml
         flatpak build-export flatpak-build-export flatpak-build
         flatpak build-bundle flatpak-build-export Immersion.flatpak io.github.hytromo.immersion
-        # can use flatpak-builder --run flatpak-build flatpak/io.github.hytromo.immersion.yml sh to debug
-        mv Immersion.flatpak Immersion-${{ github.ref_name }}-linux.flatpak
-        # set output for this step to be used in the release step:
-        echo "::set-output name=path::Immersion-${{ github.ref_name }}-linux.flatpak"
+        mv Immersion.flatpak "Immersion-${{ github.ref_name }}-${{ matrix.arch }}.flatpak"
+        echo "path=Immersion-${{ github.ref_name }}-${{ matrix.arch }}.flatpak" >> $GITHUB_OUTPUT
 
     - name: Run windeployqt to gather dependencies
-      if: matrix.os == 'windows-2025'
+      if: startsWith(matrix.arch, 'windows')
       run: |
-        cp ./build/bin/Release/qt6keychain.dll D:/a/immersion/Qt/6.9.1/msvc2022_64/bin/qt6keychain.dll
+        # Use QT_INSTALL_DIR environment variable provided by jurplel/install-qt-action
+        # Assuming qt6keychain.dll is located in the bin directory of the Qt installation.
+        # Adjust the source path if qt6keychain.dll is part of your project's build output.
+        cp ./build/bin/Release/qt6keychain.dll "${{ env.QT_INSTALL_DIR }}/bin/qt6keychain.dll"
         windeployqt --release --compiler-runtime --no-translations --no-system-d3d-compiler --no-opengl-sw build/Release/immersion.exe
 
     - name: Run macdeployqt to gather dependencies and create installer
-      if: matrix.os == 'macos-14'
+      if: matrix.arch == 'macos'
       id: create_macos_installer
       run: |
         macdeployqt build/Release/immersion.app
@@ -122,39 +131,36 @@ jobs:
           --app-drop-link 380 100 \
           "$BUILD_RELEASE_DMG" \
           build/Release/
-        mv "$BUILD_RELEASE_DMG" "Immersion-${{ github.ref_name }}-macos.dmg"
-        echo "::set-output name=path::Immersion-${{ github.ref_name }}-macos.dmg"
+        mv "$BUILD_RELEASE_DMG" "Immersion-${{ github.ref_name }}-${{ matrix.arch }}.dmg"
+        echo "path=Immersion-${{ github.ref_name }}-${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
 
 
     - name: Build Windows Installer using Inno Setup
-      if: matrix.os == 'windows-2025'
+      if: startsWith(matrix.arch, 'windows')
       id: create_windows_installer
       run: |
         Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile is.exe
         Start-Process -FilePath .\is.exe -ArgumentList '/VERYSILENT' -Wait
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
-        # rename the file to include version and os:
         $version = $env:GITHUB_REF_NAME -replace 'v', ''
-        $os = 'windows-2025'
-        $installerName = "ImmersionSetup-${version}-${os}.exe"
+        $installerName = "ImmersionSetup-${version}-${{ matrix.arch }}.exe"
         Rename-Item -Path "build/installer/ImmersionSetup.exe" -NewName $installerName
-        # set output for this step to be used in the release step:
-        echo "::set-output name=path::build/installer/$installerName"
+        echo "path=build/installer/$installerName" >> $GITHUB_OUTPUT
 
     - name: Release Windows
-      if: matrix.os == 'windows-2025' && github.ref_type == 'tag'
+      if: startsWith(matrix.arch, 'windows') && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
         files: ${{ steps.create_windows_installer.outputs.path }}
 
     - name: Release macOS
-      if: matrix.os == 'macos-14' && github.ref_type == 'tag'
+      if: matrix.arch == 'macos' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
         files: ${{ steps.create_macos_installer.outputs.path }}
 
     - name: Release Linux (Flatpak)
-      if: matrix.os == 'ubuntu-24.04' && github.ref_type == 'tag'
+      if: startsWith(matrix.arch, 'linux') && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
         files: ${{ steps.create_linux_installer.outputs.path }}

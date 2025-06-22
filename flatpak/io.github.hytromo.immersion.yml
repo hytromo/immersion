@@ -17,13 +17,6 @@ finish-args:
 
 modules:
   - shared-modules/libsecret/libsecret.json
-  # - name: libsecret
-  #   config-opts:
-  #     - -Dmanpage=false
-  #     - -Dvapi=false
-  #     - -Dgtk_doc=false
-  #     - -Dintrospection=false
-  #     - --libdir=lib # make sure it ends up in /app/lib instead of /app/lib64
 
   - name: immersion
     buildsystem: cmake-ninja
