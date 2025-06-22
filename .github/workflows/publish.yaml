@@ -18,12 +18,12 @@ jobs:
             arch: macos
           - os: windows-2025
             arch: windows-x64
-          - os: windows-11-arm
-            arch: windows-arm64
+          # - os: windows-11-arm
+          #   arch: windows-arm64
           - os: ubuntu-24.04
             arch: linux-x64
-          - os: ubuntu-24.04-arm
-            arch: linux-arm64
+          # - os: ubuntu-24.04-arm
+          #   arch: linux-arm64
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -110,10 +110,7 @@ jobs:
     - name: Run windeployqt to gather dependencies
       if: startsWith(matrix.arch, 'windows')
       run: |
-        # Use QT_INSTALL_DIR environment variable provided by jurplel/install-qt-action
-        # Assuming qt6keychain.dll is located in the bin directory of the Qt installation.
-        # Adjust the source path if qt6keychain.dll is part of your project's build output.
-        cp ./build/bin/Release/qt6keychain.dll "${{ env.QT_INSTALL_DIR }}/bin/qt6keychain.dll"
+        cp ./build/bin/Release/qt6keychain.dll "${{ env.QT_ROOT_DIR }}/bin/qt6keychain.dll"
         windeployqt --release --compiler-runtime --no-translations --no-system-d3d-compiler --no-opengl-sw build/Release/immersion.exe
 
     - name: Run macdeployqt to gather dependencies and create installer
