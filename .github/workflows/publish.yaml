@@ -1,6 +1,10 @@
 name: CI
  
-on: push
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
 jobs:
   build_and_test:
     permissions:
@@ -19,8 +23,12 @@ jobs:
       if: matrix.os == 'ubuntu-22.04'
 
     - name: Install Ninja (windows)   
-      run: choco install ninja        
+      run: choco install ninja
       if: matrix.os == 'windows-2025'
+
+    - name: Install Ninja (mac)   
+      run: brew install ninja create-dmg
+      if: matrix.os == 'macos-14'
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4.3.0
@@ -36,8 +44,8 @@ jobs:
     - name: Build
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3
 
     - name: Run windeployqt to gather dependencies
       if: matrix.os == 'windows-2025'
@@ -45,7 +53,7 @@ jobs:
         cp ./build/bin/Release/qt6keychain.dll D:/a/immersion/Qt/6.9.1/msvc2022_64/bin/qt6keychain.dll
         windeployqt --release --compiler-runtime --no-translations --no-system-d3d-compiler --no-opengl-sw build/Release/immersion.exe
 
-    - name: Run windeployqt to gather dependencies and create installer
+    - name: Run macdeployqt to gather dependencies and create installer
       if: matrix.os == 'macos-14'
       run: |
         macdeployqt build/Release/immersion.app
