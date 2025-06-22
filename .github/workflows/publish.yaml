@@ -39,18 +39,27 @@ jobs:
         cp ./build/bin/Release/qt6keychain.dll D:/a/immersion/Qt/6.9.1/msvc2022_64/bin/qt6keychain.dll
         windeployqt --release --compiler-runtime --no-translations --no-system-d3d-compiler --no-opengl-sw build/Release/immersion.exe
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    - name: Download and install Inno Setup
+      if: matrix.os == 'windows-2025'
+      run: |
+        Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile is.exe
+        Start-Process -FilePath .\is.exe -ArgumentList '/VERYSILENT' -Wait
 
-    # - name: Zip deployment folder
-    #   if: matrix.os == 'windows-2025'
-    #   run: |
-    #     Compress-Archive -Path build\Release\* -DestinationPath build\release-package.zip
+    - name: Build installer with Inno Setup
+      if: matrix.os == 'windows-2025'
+      run: |
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
 
-    # - name: Release
-    #   if: matrix.os == 'windows-2025'
-    #   uses: softprops/action-gh-release@v2
-    #   with:
-    #     files: build/release-package.zip
-    #     name: Release ${{ github.ref_name }}
-    #     body: Release ${{ github.ref_name }}
+    # resulting installer in build\installer\ImmersionSetup.exe
+    # let's create a release with it
+
+    - name: Release
+      if: matrix.os == 'windows-2025'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: build/installer/ImmersionSetup.exe
+        name: Release ${{ github.ref_name }}
+        body: Release ${{ github.ref_name }}
+
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v3

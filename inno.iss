@@ -4,7 +4,7 @@ AppVersion=1.0
 DefaultDirName={pf}\Immersion
 DefaultGroupName=Immersion
 OutputDir=build\installer
-OutputBaseFilename=ImmersionInstaller
+OutputBaseFilename=ImmersionSetup
 Compression=lzma
 SolidCompression=yes
 
