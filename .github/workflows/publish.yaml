@@ -14,14 +14,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
-            arch: macos
+          # - os: macos-14
+          #   arch: macos
           - os: windows-2025
             arch: windows-x64
           # - os: windows-11-arm
           #   arch: windows-arm64
-          - os: ubuntu-24.04
-            arch: linux-x64
+          # - os: ubuntu-24.04
+          #   arch: linux-x64
           # - os: ubuntu-24.04-arm
           #   arch: linux-arm64
     runs-on: ${{ matrix.os }}
@@ -143,6 +143,9 @@ jobs:
         $installerName = "ImmersionSetup-${version}-${{ matrix.arch }}.exe"
         Rename-Item -Path "build/installer/ImmersionSetup.exe" -NewName $installerName
         echo "path=build/installer/$installerName" >> $GITHUB_OUTPUT
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Release Windows
       if: startsWith(matrix.arch, 'windows') && github.ref_type == 'tag'
