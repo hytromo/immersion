@@ -59,7 +59,6 @@ jobs:
     # This step assumes your Flatpak manifest file is configured to use these icons.
     # The manifest should copy them to /app/share/icons/hicolor/${size}x${size}/apps/${app-id}.png
     - name: Generate icons (linux/flatpak)
-      working-directory: resources
       if: matrix.os == 'ubuntu-22.04'
       run: |
         # Assumes your flatpak app-id is io.github.hytromo.immersion
