@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: [macos-14, windows-2025, ubuntu-22.04]
+        # os: [macos-14, windows-2025, ubuntu-24.04]
         os: [ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
@@ -24,7 +24,7 @@ jobs:
 
     - name: Install dependencies (linux)
       run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder
-      if: matrix.os == 'ubuntu-22.04'
+      if: matrix.os == 'ubuntu-24.04'
 
     - name: Install Ninja (windows)
       run: choco install ninja imagemagick
@@ -36,7 +36,7 @@ jobs:
 
     - name: Generate icons (windows/linux)
       working-directory: resources
-      if: matrix.os == 'windows-2025' || matrix.os == 'ubuntu-22.04'
+      if: matrix.os == 'windows-2025' || matrix.os == 'ubuntu-24.04'
       shell: bash
       run: |
         mkdir icons
@@ -57,7 +57,7 @@ jobs:
         iconutil -c icns Immersion.iconset
 
     - name: Generate icons (linux/flatpak)
-      if: matrix.os == 'ubuntu-22.04'
+      if: matrix.os == 'ubuntu-24.04'
       run: |
         # Assumes your flatpak app-id is io.github.hytromo.immersion
         APP_ID="io.github.hytromo.immersion"
@@ -72,25 +72,25 @@ jobs:
       with:
         version: '6.9.1'
       # Do not install Qt on linux runner, as Flatpak will use its own from the SDK
-      if: matrix.os != 'ubuntu-22.04'
+      if: matrix.os != 'ubuntu-24.04'
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-2025'
 
     - name: Build
       # Do not run native build for Linux, Flatpak handles its own build process
-      if: matrix.os != 'ubuntu-22.04'
+      if: matrix.os != 'ubuntu-24.04'
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
     # --- Flatpak Build Steps (Linux Only) ---
     - name: Setup Flatpak remote
-      if: matrix.os == 'ubuntu-22.04'
+      if: matrix.os == 'ubuntu-24.04'
       run: |
         sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
         sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
 
     - name: Build Flatpak
-      if: matrix.os == 'ubuntu-22.04'
+      if: matrix.os == 'ubuntu-24.04'
       run: |
         flatpak-builder --force-clean flatpak-build flatpak/io.github.hytromo.immersion.yml
         flatpak build-export flatpak-build-export flatpak-build
@@ -136,7 +136,7 @@ jobs:
         files: build/Release/Immersion.dmg
 
     - name: Release Linux (Flatpak)
-      if: matrix.os == 'ubuntu-22.04' && github.ref_type == 'tag'
+      if: matrix.os == 'ubuntu-24.04' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
         files: Immersion.flatpak
