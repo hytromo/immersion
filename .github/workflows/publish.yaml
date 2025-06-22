@@ -35,7 +35,7 @@ jobs:
       if: matrix.os == 'windows-2025'
 
     - name: Install Ninja (mac)   
-      run: brew install ninja create-dmg imagemagick
+      run: brew install create-dmg imagemagick
       if: matrix.os == 'macos-14'
 
     - name: Generate icons (windows)
@@ -91,6 +91,9 @@ jobs:
            --app-drop-link 380 100 \
            build/Release/immersion.dmg \
            build/Release/ 
+
+        Rez -append resources/Immersion.icns -o build/Release/Immersion.icns.rsrc
+        SetFile -a C build/Release/immersion.dmg
 
     - name: Build Windows Installer using Inno Setup
       if: matrix.os == 'windows-2025'
