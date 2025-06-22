@@ -88,9 +88,8 @@ jobs:
            --icon-size 100 \
            --icon "immersion.app" 100 100 \
            --app-drop-link 380 100 \
-           --overwrite
            build/Release/immersion.dmg \
-           build/Release/ \
+           build/Release/ 
 
     - name: Build Windows Installer using Inno Setup
       if: matrix.os == 'windows-2025'
