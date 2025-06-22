@@ -6,12 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>850</width>
-    <height>365</height>
+    <width>663</width>
+    <height>258</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Immersion</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">font-size: 14pt;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -57,6 +60,9 @@
       </item>
       <item>
        <widget class="QPlainTextEdit" name="inputText">
+        <property name="styleSheet">
+         <string notr="true">font-size: 12pt;</string>
+        </property>
         <property name="plainText">
          <string>Hej jeg heder Alex. Hvad hedder du?</string>
         </property>
@@ -65,7 +71,7 @@
       <item>
        <widget class="QPushButton" name="goButton">
         <property name="text">
-         <string>Go</string>
+         <string>GO</string>
         </property>
        </widget>
       </item>
@@ -73,14 +79,13 @@
     </item>
    </layout>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>850</width>
-     <height>21</height>
+     <width>663</width>
+     <height>31</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -88,12 +93,18 @@
      <string>File</string>
     </property>
     <addaction name="actionReset_OpenAI_API_key"/>
+    <addaction name="actionOpen_corrections_folder"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
   <action name="actionReset_OpenAI_API_key">
    <property name="text">
     <string>Reset OpenAI API key</string>
+   </property>
+  </action>
+  <action name="actionOpen_corrections_folder">
+   <property name="text">
+    <string>Open corrections folder</string>
    </property>
   </action>
  </widget>

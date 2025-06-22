@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Immersion
+Comment=Write the language you want, everywhere
+Exec=immersion
+Icon=io.github.hytromo.immersion
+Type=Application
+Terminal=false
+Categories=Utility;
+StartupNotify=true

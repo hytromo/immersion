@@ -17,6 +17,8 @@
 #include <QDir>
 #include <QDateTime>
 #include <QThread>
+#include <QDesktopServices>
+#include <QtConcurrent>
 
 const QString MainWindow::SETTINGS_MODEL_NAME_KEY = "model_name";
 const QString MainWindow::SETTINGS_SOURCE_LANG_KEY = "sourceLang";
@@ -62,6 +64,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     keychain->readKey(MainWindow::OPENAI_API_KEY_KEYCHAIN_KEY);
     connect(ui->actionReset_OpenAI_API_key, SIGNAL(triggered()), this, SLOT(actionReset_OpenAI_API_key()));
+    connect(ui->actionOpen_corrections_folder, SIGNAL(triggered()), this, SLOT(actionOpenCorrectionsFolder()));
+
 }
 
 MainWindow::~MainWindow()
@@ -75,6 +79,20 @@ MainWindow::~MainWindow()
 
     delete ui;
 }
+
+void MainWindow::actionOpenCorrectionsFolder()
+{
+    QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    QUrl folderUrl = QUrl::fromLocalFile(appDataPath);
+
+    if (!folderUrl.isValid()) {
+        QMessageBox::warning(this, "Error", "Invalid folder path: " + appDataPath);
+        return;
+    }
+
+    (void)QtConcurrent::run([folderUrl]() {
+        QDesktopServices::openUrl(folderUrl);
+    });}
 
 void MainWindow::actionReset_OpenAI_API_key()
 {

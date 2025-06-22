@@ -34,3 +34,10 @@ Thumbs.db
 
 # Qt Creator folders
 .idea/
+
+resources/icon*
+resources/*.icns
+
+.flatpak-builder/**/*
+*.flatpak
+flatpak-build-export/**/*

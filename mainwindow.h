@@ -32,6 +32,7 @@ public:
 private slots:
     void on_goButton_clicked();
     void actionReset_OpenAI_API_key();
+    void actionOpenCorrectionsFolder();
     void handleNetworkReply(QNetworkReply *reply);
 private:
     Ui::MainWindow *ui;
