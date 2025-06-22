@@ -23,7 +23,7 @@ jobs:
         submodules: 'recursive'
 
     - name: Install dependencies (linux)
-      run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder libsecret-1-dev
+      run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder libsecret-1-dev appstream
       if: matrix.os == 'ubuntu-22.04'
 
     - name: Install Ninja (windows)
