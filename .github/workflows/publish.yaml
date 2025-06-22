@@ -23,6 +23,18 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Install dependencies (linux)
+      run: sudo apt-get --yes install ninja-build imagemagick
+      if: matrix.os == 'ubuntu-22.04'
+
+    - name: Install Ninja (windows)   
+      run: choco install ninja imagemagick
+      if: matrix.os == 'windows-2025'
+
+    - name: Install Ninja (mac)   
+      run: brew install ninja create-dmg imagemagick
+      if: matrix.os == 'macos-14'
+
     - name: Generate icons (windows)
       working-directory: resources
       if: matrix.os == 'windows-2025'
@@ -42,18 +54,6 @@ jobs:
           convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 Immersion.iconset/icon_${size}x${size}.png;
         done
         iconutil -c icns Immersion.iconset
-
-    - name: Install dependencies (linux)
-      run: sudo apt-get --yes install ninja-build
-      if: matrix.os == 'ubuntu-22.04'
-
-    - name: Install Ninja (windows)   
-      run: choco install ninja
-      if: matrix.os == 'windows-2025'
-
-    - name: Install Ninja (mac)   
-      run: brew install ninja create-dmg
-      if: matrix.os == 'macos-14'
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4.3.0
