@@ -42,9 +42,9 @@ jobs:
         mkdir icons
         COMMAND=$(command -v magick || command -v convert)
         for size in 16 32 64 128 256 512; do
-          $COMMAND immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
+          "$COMMAND" immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
         done
-        $COMMAND icons/icon-* icon.ico
+        "$COMMAND" icons/icon-* icon.ico
 
     - name: Generate icons (macos)
       working-directory: resources
@@ -64,7 +64,7 @@ jobs:
         COMMAND=$(command -v magick || command -v convert)
         for size in 16 32 64 128 256 512; do
           install -d "flatpak/files/share/icons/hicolor/${size}x${size}/apps"
-          $COMMAND resources/immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 "flatpak/files/share/icons/hicolor/${size}x${size}/apps/${APP_ID}.png"
+          "$COMMAND" resources/immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 "flatpak/files/share/icons/hicolor/${size}x${size}/apps/${APP_ID}.png"
         done
 
     - name: Install Qt
@@ -122,7 +122,8 @@ jobs:
           --app-drop-link 380 100 \
           "$BUILD_RELEASE_DMG" \
           build/Release/
-        echo "::set-output name=path::$BUILD_RELEASE_DMG"
+        mv "$BUILD_RELEASE_DMG" "Immersion-${{ github.ref_name }}-macos.dmg"
+        echo "::set-output name=path::Immersion-${{ github.ref_name }}-macos.dmg"
 
 
     - name: Build Windows Installer using Inno Setup
