@@ -11,11 +11,14 @@ jobs:
       contents: write
     name: "Build and test"
     strategy:
+      fail-fast: false
       matrix:
+
         # os: [ubuntu-24.04, windows-2025]
         # os: [windows-2025]
         # os: [macos-14]
         os: [macos-14, windows-2025]
+        # do not fail early if one of the jobs fails:
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -38,12 +41,13 @@ jobs:
     - name: Generate icons (windows)
       working-directory: resources
       if: matrix.os == 'windows-2025'
+      shell: bash
       run: |
         mkdir icons
         for size in 16 32 256; do
-          convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
+          magick convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
         done
-        convert icons/icon-* icon.ico
+        magick convert icons/icon-* icon.ico
 
     - name: Generate icons (macos)
       working-directory: resources
@@ -51,7 +55,7 @@ jobs:
       run: |
         mkdir Immersion.iconset
         for size in 16 32 64 128 256 512; do
-          convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 Immersion.iconset/icon_${size}x${size}.png;
+          magick convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 Immersion.iconset/icon_${size}x${size}.png;
         done
         iconutil -c icns Immersion.iconset
 
