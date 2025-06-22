@@ -33,14 +33,20 @@ jobs:
     - name: Build
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
+    - name: Run windeployqt to gather dependencies
+      if: matrix.os == 'windows-2025'
+      run: |
+        cp ./build/bin/Release/qt6keychain.dll D:/a/immersion/Qt/6.9.1/msvc2022_64/bin/qt6keychain.dll
+        windeployqt --release --compiler-runtime --no-translations --no-system-d3d-compiler --no-opengl-sw build/Release/immersion.exe
+
+    - name: Compile .ISS to .EXE Installer
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.6
+      with:
+        path: inno.iss
+        options: /O+
+
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
-
-    # - name: Run windeployqt to gather dependencies
-    #   if: matrix.os == 'windows-2025'
-    #   run: |
-    #     $exe = "build\\Release\\immersion.exe"
-    #     & "$Env:QTDIR\\bin\\windeployqt.exe" $exe
 
     # - name: Zip deployment folder
     #   if: matrix.os == 'windows-2025'

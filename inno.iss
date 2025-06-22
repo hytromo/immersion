@@ -1,0 +1,15 @@
+[Setup]
+AppName=Immersion
+AppVersion=1.0
+DefaultDirName={pf}\Immersion
+DefaultGroupName=Immersion
+OutputDir=build\installer
+OutputBaseFilename=ImmersionInstaller
+Compression=lzma
+SolidCompression=yes
+
+[Files]
+Source: "build\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\Immersion"; Filename: "{app}\immersion.exe"
