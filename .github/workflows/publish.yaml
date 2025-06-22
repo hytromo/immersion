@@ -89,11 +89,11 @@ jobs:
            --icon "immersion.app" 100 100 \
            --volicon resources/Immersion.icns \
            --app-drop-link 380 100 \
-           build/Release/immersion.dmg \
+           build/Release/Immersion.dmg \
            build/Release/ 
 
-        Rez -append resources/Immersion.icns -o build/Release/Immersion.icns.rsrc
-        SetFile -a C build/Release/immersion.dmg
+        Rez -append resources/Immersion.icns -o build/Release/Immersion.dmg
+        SetFile -a C build/Release/Immersion.dmg
 
     - name: Build Windows Installer using Inno Setup
       if: matrix.os == 'windows-2025'
@@ -112,4 +112,4 @@ jobs:
       if: matrix.os == 'macos-14' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
-        files: build/Release/immersion.dmg
+        files: build/Release/Immersion.dmg
