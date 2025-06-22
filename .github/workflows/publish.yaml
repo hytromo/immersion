@@ -80,14 +80,14 @@ jobs:
       uses: jurplel/install-qt-action@v4.3.0
       with:
         version: '6.9.1'
-      if: !startsWith(matrix.arch, 'linux')
+      if: ${{ !startsWith(matrix.arch, 'linux') }}
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: startsWith(matrix.arch, 'windows')
 
     - name: Build
       # Do not run native build for Linux, Flatpak handles its own build process
-      if: !startsWith(matrix.arch, 'linux')
+      if: ${{ !startsWith(matrix.arch, 'linux') }}
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
     # --- Flatpak Build Steps (Linux Only) ---
