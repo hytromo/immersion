@@ -36,6 +36,9 @@ jobs:
     - name: Build
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+
     - name: Run windeployqt to gather dependencies
       if: matrix.os == 'windows-2025'
       run: |
@@ -58,6 +61,3 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: build/installer/ImmersionSetup.exe
-
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
