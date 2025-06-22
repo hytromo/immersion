@@ -48,10 +48,7 @@ jobs:
     - name: Build installer with Inno Setup
       if: matrix.os == 'windows-2025'
       run: |
-        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
-
-    # resulting installer in build\installer\ImmersionSetup.exe
-    # let's create a release with it
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
 
     - name: Release
       if: matrix.os == 'windows-2025'
