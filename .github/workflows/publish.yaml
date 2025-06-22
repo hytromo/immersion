@@ -14,9 +14,30 @@ jobs:
       matrix:
         # os: [ubuntu-24.04, windows-2025]
         # os: [windows-2025]
-        os: [macos-14]
+        # os: [macos-14]
+        os: [macos-14, windows-2025]
     runs-on: ${{ matrix.os }}
     steps:
+
+    - name: Generate icons (windows)
+      working-directory: resources
+      if: matrix.os == 'windows-2025'
+      run: |
+        mkdir icons
+        for size in 16 32 256; do
+          convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
+        done
+        convert icons/icon-* icon.ico
+
+    - name: Generate icons (macos)
+      working-directory: resources
+      if: matrix.os == 'macos-14'
+      run: |
+        mkdir Immersion.iconset
+        for size in 16 32 64 128 256 512; do
+          convert immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 Immersion.iconset/icon_${size}x${size}.png;
+        done
+        iconutil -c icns Immersion.iconset
 
     - name: Install dependencies (linux)
       run: sudo apt-get --yes install ninja-build
@@ -57,7 +78,16 @@ jobs:
       if: matrix.os == 'macos-14'
       run: |
         macdeployqt build/Release/immersion.app
-        create-dmg build/Release/immersion.dmg build/Release/ --overwrite
+        create-dmg --volname "Immersion" \
+           --window-pos 200 120 \
+           --window-size 500 300 \
+           --icon-size 100 \
+           --icon "immersion.app" 100 100 \
+           --app-drop-link 380 100 \
+           --dmg-title "Immersion Installer" \
+           --overwrite
+           build/Release/immersion.dmg \
+           build/Release/ \
 
     - name: Download and install Inno Setup
       if: matrix.os == 'windows-2025'
