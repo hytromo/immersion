@@ -48,10 +48,10 @@ elseif (APPLE)
     set_source_files_properties(${app_icon_macos} PROPERTIES
            MACOSX_PACKAGE_LOCATION "Resources")
 
-    qt_add_executable(immersion MACOSX_BUNDLE ${PROJECT_SOURCES} ${app_icon_macos})
+    qt_add_executable(immersion MACOSX_BUNDLE MANUAL_FINALIZATION ${PROJECT_SOURCES} ${app_icon_macos})
 #! [appicon_macOS]
 else()
-    qt_add_executable(immersion ${PROJECT_SOURCES})
+    qt_add_executable(immersion MANUAL_FINALIZATION ${PROJECT_SOURCES})
 endif()
 
 # target_link_libraries(immersion PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}Keychain::Qt${QT_VERSION_MAJOR}Keychain)

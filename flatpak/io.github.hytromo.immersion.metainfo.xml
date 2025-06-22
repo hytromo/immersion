@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+	<id>io.github.hytromo.immersion</id>
+
+	<name>Immersion</name>
+	<summary>Write the language you want, everywhere</summary>
+
+	<metadata_license>CC0-1.0</metadata_license>
+	<project_license>MIT</project_license>
+	<description>
+		<p>If you are learning a new language and you want to write it everywhere, even if the
+			receivers do not speak it, Immersion can help you.
+		</p>
+		<p>
+			It allows you to write in your language and automatically translates it to the language
+			of the receiver, so they can understand you.
+		</p>
+		<p>
+			Additionally, it corrects your mistakes so you can look back and learn from them.
+		</p>
+	</description>
+
+	<launchable type="desktop-id">io.github.hytromo.immersion.desktop</launchable>
+
+	<screenshots>
+		<screenshot type="default">
+			<image>https://raw.githubusercontent.com/hytromo/immersion/main/screenshots/main.png</image>
+		</screenshot>
+	</screenshots>
+
+	<url type="homepage">https://github.com/hytromo/immersion</url>
+	<url type="bugtracker">https://github.com/hytromo/immersion/issues</url>
+
+	<releases>
+		<release version="1.0.0" date="2025-06-22">
+			<description>
+				<p>Initial release of Immersion.</p>
+				<ul>
+					<li>Translation from any language to any other language</li>
+					<li>Correction of errors</li>
+				</ul>
+			</description>
+		</release>
+	</releases>
+
+	<content_rating type="oars-1.1" />
+</component>

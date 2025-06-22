@@ -37,3 +37,7 @@ Thumbs.db
 
 resources/icon*
 resources/*.icns
+
+.flatpak-builder/**/*
+*.flatpak
+flatpak-build-export/**/*

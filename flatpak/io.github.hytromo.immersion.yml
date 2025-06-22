@@ -1,0 +1,39 @@
+app-id: io.github.hytromo.immersion
+
+runtime: org.kde.Platform
+runtime-version: '6.9'
+
+sdk: org.kde.Sdk
+
+command: immersion
+
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --talk-name=org.freedesktop.secrets
+
+modules:
+  - shared-modules/libsecret/libsecret.json
+
+  - name: immersion
+    buildsystem: cmake-ninja
+    build-options:
+      env:
+        PKG_CONFIG_PATH: /app/lib64/pkgconfig:${PKG_CONFIG_PATH}
+        CMAKE_PREFIX_PATH: /usr/lib/qt6:/app # Ensure Qt6 is found
+    config-opts:
+      # Pass the install prefix to your application's build system
+      - -DCMAKE_INSTALL_PREFIX=/app
+    sources:
+      - type: dir
+        path: ../
+    post-install:
+      - install -Dm644 flatpak/io.github.hytromo.immersion.desktop -t /app/share/applications/
+      - install -Dm644 flatpak/io.github.hytromo.immersion.metainfo.xml -t /app/share/metainfo/
+      - |
+        for size in 16 32 64 128 256 512; do
+          install -Dm644 resources/icons/icon-${size}.png /app/share/icons/hicolor/${size}x${size}/apps/${FLATPAK_ID}.png
+        done

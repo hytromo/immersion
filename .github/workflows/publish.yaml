@@ -1,24 +1,20 @@
-name: CI
- 
+name: Build and Release
+
 on:
   push:
     tags:
       - 'v*.*.*'
 
 jobs:
-  build_and_test:
+  build_and_release:
     permissions:
       contents: write
-    name: "Build and test"
+    name: "Build and release"
     strategy:
       fail-fast: false
       matrix:
-
-        # os: [ubuntu-24.04, windows-2025]
-        # os: [windows-2025]
-        # os: [macos-14]
-        os: [macos-14, windows-2025]
-        # do not fail early if one of the jobs fails:
+        # os: [macos-14, windows-2025, ubuntu-22.04]
+        os: [ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -27,24 +23,24 @@ jobs:
         submodules: 'recursive'
 
     - name: Install dependencies (linux)
-      run: sudo apt-get --yes install ninja-build imagemagick
+      run: sudo apt-get --yes install ninja-build imagemagick flatpak flatpak-builder libsecret-1-dev
       if: matrix.os == 'ubuntu-22.04'
 
-    - name: Install Ninja (windows)   
+    - name: Install Ninja (windows)
       run: choco install ninja imagemagick
       if: matrix.os == 'windows-2025'
 
-    - name: Install Ninja (mac)   
+    - name: Install Ninja (mac)
       run: brew install create-dmg imagemagick
       if: matrix.os == 'macos-14'
 
-    - name: Generate icons (windows)
+    - name: Generate icons (windows/linux)
       working-directory: resources
-      if: matrix.os == 'windows-2025'
+      if: matrix.os == 'windows-2025' || matrix.os == 'ubuntu-22.04'
       shell: bash
       run: |
         mkdir icons
-        for size in 16 32 256; do
+        for size in 16 32 64 128 256 512; do
           magick immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 icons/icon-${size}.png;
         done
         magick icons/icon-* icon.ico
@@ -59,18 +55,56 @@ jobs:
         done
         iconutil -c icns Immersion.iconset
 
+    # This step assumes your Flatpak manifest file is configured to use these icons.
+    # The manifest should copy them to /app/share/icons/hicolor/${size}x${size}/apps/${app-id}.png
+    - name: Generate icons (linux/flatpak)
+      working-directory: resources
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        # Assumes your flatpak app-id is io.github.hytromo.immersion
+        APP_ID="io.github.hytromo.immersion"
+        for size in 16 32 64 128 256 512; do
+          install -d "flatpak/files/share/icons/hicolor/${size}x${size}/apps"
+          magick resources/immersion.png -resize ${size}x${size} -filter Lanczos -define filter:support=2 -quality 100 "flatpak/files/share/icons/hicolor/${size}x${size}/apps/${APP_ID}.png"
+        done
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v4.3.0
       with:
         version: '6.9.1'
+      # Do not install Qt on linux runner, as Flatpak will use its own from the SDK
+      if: matrix.os != 'ubuntu-22.04'
 
     - uses: ilammy/msvc-dev-cmd@v1
+      if: matrix.os == 'windows-2025'
 
     - name: Build
+      # Do not run native build for Linux, Flatpak handles its own build process
+      if: matrix.os != 'ubuntu-22.04'
       run: cmake -S . -B build -G "Ninja Multi-Config" && cmake --build build --config Release
 
-    # - name: Setup tmate session
-    #   uses: mxschmitt/action-tmate@v3
+    # --- Flatpak Build Steps (Linux Only) ---
+    - name: Setup Flatpak remote
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        flatpak install -y --noninteractive flathub org.kde.Platform//6.9 org.kde.Sdk//6.9
+
+    - name: Cache Flatpak builder
+      if: matrix.os == 'ubuntu-22.04'
+      uses: actions/cache@v4
+      with:
+        path: ~/.var/app/org.flatpak.Builder/cache
+        key: flatpak-builder-cache-${{ hashFiles('flatpak/**') }}
+        restore-keys: |
+          flatpak-builder-cache-
+
+    - name: Build Flatpak
+      if: matrix.os == 'ubuntu-22.04'
+      run: |
+        flatpak-builder --force-clean flatpak-build flatpak/io.github.hytromo.immersion.yml
+        flatpak build-export flatpak-build-export flatpak-build
+        flatpak build-bundle flatpak-build-export Immersion.flatpak io.github.hytromo.immersion
 
     - name: Run windeployqt to gather dependencies
       if: matrix.os == 'windows-2025'
@@ -83,17 +117,14 @@ jobs:
       run: |
         macdeployqt build/Release/immersion.app
         create-dmg --volname "Immersion" \
-           --window-pos 200 120 \
-           --window-size 500 300 \
-           --icon-size 100 \
-           --icon "immersion.app" 100 100 \
-           --volicon resources/Immersion.icns \
-           --app-drop-link 380 100 \
-           build/Release/Immersion.dmg \
-           build/Release/ 
-
-        Rez -append resources/Immersion.icns -o build/Release/Immersion.dmg
-        SetFile -a C build/Release/Immersion.dmg
+          --window-pos 200 120 \
+          --window-size 500 300 \
+          --icon-size 100 \
+          --icon "immersion.app" 100 100 \
+          --volicon resources/Immersion.icns \
+          --app-drop-link 380 100 \
+          build/Release/Immersion.dmg \
+          build/Release/
 
     - name: Build Windows Installer using Inno Setup
       if: matrix.os == 'windows-2025'
@@ -102,14 +133,20 @@ jobs:
         Start-Process -FilePath .\is.exe -ArgumentList '/VERYSILENT' -Wait
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
 
-    - name: Release
+    - name: Release Windows
       if: matrix.os == 'windows-2025' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
         files: build/installer/ImmersionSetup.exe
 
-    - name: Release
+    - name: Release macOS
       if: matrix.os == 'macos-14' && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
       with:
         files: build/Release/Immersion.dmg
+
+    - name: Release Linux (Flatpak)
+      if: matrix.os == 'ubuntu-22.04' && github.ref_type == 'tag'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: Immersion.flatpak
