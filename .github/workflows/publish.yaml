@@ -45,6 +45,12 @@ jobs:
         cp ./build/bin/Release/qt6keychain.dll D:/a/immersion/Qt/6.9.1/msvc2022_64/bin/qt6keychain.dll
         windeployqt --release --compiler-runtime --no-translations --no-system-d3d-compiler --no-opengl-sw build/Release/immersion.exe
 
+    - name: Run windeployqt to gather dependencies and create installer
+      if: matrix.os == 'macos-14'
+      run: |
+        macdeployqt build/Release/immersion.app
+        create-dmg build/Release/immersion.dmg build/Release/ --overwrite
+
     - name: Download and install Inno Setup
       if: matrix.os == 'windows-2025'
       run: |
@@ -61,3 +67,9 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: build/installer/ImmersionSetup.exe
+
+    - name: Release
+      if: matrix.os == 'macos-14' && github.ref_type == 'tag'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: build/Release/immersion.dmg
