@@ -1,6 +1,6 @@
 [Setup]
 AppName=Immersion
-AppVersion=0.0.2
+AppVersion=0.0.3
 DefaultDirName={pf}\Immersion
 DefaultGroupName=Immersion
 OutputDir=build\installer
