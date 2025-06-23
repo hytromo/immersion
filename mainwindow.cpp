@@ -101,6 +101,11 @@ void MainWindow::actionReset_OpenAI_API_key()
 
 void MainWindow::on_goButton_clicked()
 {
+    if (!ui->goButton->isEnabled()) {
+        return;
+    }
+    ui->goButton->setDisabled(true);
+
     QString inputText = ui->inputText->toPlainText();
     QString sourceLang = ui->sourceLang->text();
     QString targetLang = ui->targetLang->text();
@@ -112,10 +117,7 @@ void MainWindow::on_goButton_clicked()
     QJsonArray messages;
     QJsonObject message;
     message["role"] = "user";
-    message["content"] = QString(
-                             "Translate the text from %1 to %2, ready to be shared with others."
-                             "Return the original sentence with grammar/spelling corrections marked with * around them, for user review.")
-                             .arg(sourceLang, targetLang);
+    message["content"] = QString("Translate from %1 to %2").arg(sourceLang, targetLang);
     messages.append(message);
     messages.append(QJsonObject{
         {"role", "user"},
@@ -127,9 +129,8 @@ void MainWindow::on_goButton_clicked()
     schema["type"] = "object";
     schema["properties"] = QJsonObject{
         {"translation", QJsonObject{{"type", "string"}}},
-        {"originalWithCorrections", QJsonObject{{"type", "string"}}}
     };
-    schema["required"] = QJsonArray{"translation", "originalWithCorrections"};
+    schema["required"] = QJsonArray{"translation"};
     schema["additionalProperties"] = false;
 
     json["response_format"] = QJsonObject{
@@ -150,6 +151,7 @@ void MainWindow::on_goButton_clicked()
 
 void MainWindow::handleNetworkReply(QNetworkReply *reply)
 {
+    ui->goButton->setEnabled(true);
     QByteArray responseData = reply->readAll();
     qDebug() << "\n-- Response Body --\n" << responseData;
 
@@ -182,7 +184,6 @@ void MainWindow::handleNetworkReply(QNetworkReply *reply)
 
     QJsonObject result = contentDoc.object();
     QString translation = result["translation"].toString();
-    QString corrected = result["originalWithCorrections"].toString();
 
     reply->deleteLater();
 
@@ -201,10 +202,7 @@ void MainWindow::handleNetworkReply(QNetworkReply *reply)
     if (file.open(QIODevice::WriteOnly | QIODevice::Append)) {
         file.write("\n\n---\n\n");
         file.write(now.toString("HH:mm").toUtf8());
-        file.write("\noriginal: ");
         file.write(this->lastInputText.toUtf8());
-        file.write("\n\ncorrected: ");
-        file.write(corrected.toUtf8());
         file.close();
     }
 
