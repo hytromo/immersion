@@ -113,8 +113,8 @@ void MainWindow::on_goButton_clicked()
     QJsonObject message;
     message["role"] = "user";
     message["content"] = QString(
-                             "Translate the following from %1 to %2. "
-                             "Also return the original sentence with grammar/spelling corrections marked with * around them.")
+                             "Translate the text from %1 to %2, ready to be shared with others."
+                             "Return the original sentence with grammar/spelling corrections marked with * around them, for user review.")
                              .arg(sourceLang, targetLang);
     messages.append(message);
     messages.append(QJsonObject{

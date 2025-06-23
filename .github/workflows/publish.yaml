@@ -114,13 +114,13 @@ jobs:
     - name: Run macdeployqt to gather dependencies and create installer
       if: matrix.arch == 'macos'
       run: |
-        macdeployqt build/Release/immersion.app
+        macdeployqt build/Release/Immersion.app
         BUILD_RELEASE_DMG=build/Release/Immersion.dmg
         create-dmg --volname "Immersion" \
           --window-pos 200 120 \
           --window-size 500 300 \
           --icon-size 100 \
-          --icon "immersion.app" 100 100 \
+          --icon "Immersion.app" 100 100 \
           --volicon resources/Immersion.icns \
           --app-drop-link 380 100 \
           "$BUILD_RELEASE_DMG" \

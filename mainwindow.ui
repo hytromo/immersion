@@ -61,7 +61,7 @@
       <item>
        <widget class="QPlainTextEdit" name="inputText">
         <property name="styleSheet">
-         <string notr="true">font-size: 12pt;</string>
+         <string notr="true">font-size: 14pt;</string>
         </property>
         <property name="plainText">
          <string>Hej jeg heder Alex. Hvad hedder du?</string>
