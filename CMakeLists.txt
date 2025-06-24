@@ -15,12 +15,17 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Concurrent)
 
 set(PROJECT_SOURCES
-    AppDataWriter.cpp
+    AppDataManager.cpp
+    AppDataManager.h
     OpenAICommunicator.cpp
+    OpenAICommunicator.h
     SettingsManager.cpp
+    SettingsManager.h
     keychainclass.cpp
+    keychainclass.h
     main.cpp
     mainwindow.cpp
+    mainwindow.h
 )
 
 

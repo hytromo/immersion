@@ -2,7 +2,7 @@
 #include "./ui_mainwindow.h"
 #include "keychainclass.h"
 #include "OpenAICommunicator.h"
-#include "AppDataWriter.h"
+#include "AppDataManager.h"
 #include "SettingsManager.h"
 
 #include <QInputDialog>
@@ -22,14 +22,17 @@
 #include <QThread>
 #include <QDesktopServices>
 #include <QtConcurrent>
+#include <QProgressDialog>
+#include <QFile>
+#include <QDate>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , keychain(new KeyChainClass(this))
-    , openaiCommunicator(new OpenAICommunicator(this))
-    , appDataWriter(new AppDataWriter(this))
+    , appDataManager(new AppDataManager(this))
     , settingsManager(new SettingsManager(this))
+    , openaiApiKey("")
 {
     ui->setupUi(this);
     ui->inputText->setFocus();
@@ -42,36 +45,11 @@ MainWindow::MainWindow(QWidget *parent)
     QShortcut *shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this->ui->inputText);
     connect(shortcut, &QShortcut::activated, this, &MainWindow::on_goButton_clicked);
 
-    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
-    connect(keychain, &KeyChainClass::keyRestored, this,
-            [=](const QString &key, const QString &value) {
-                openaiCommunicator->setApiKey(value);
-            });
+    retrieveOpenAIApiKey();
 
-    connect(keychain, &KeyChainClass::error, this,
-            [=](const QString &errorMessage) {
-                QString apiKey = "";
-                while (apiKey == "") {
-                    apiKey = QInputDialog::getText(this, "OpenAI API key missing", "Your API key is missing probably (" + errorMessage + "), please provide it below");
-                }
-                keychain->writeKey(OPENAI_API_KEY_KEYCHAIN_KEY, apiKey);
-            });
-
-    keychain->readKey(OPENAI_API_KEY_KEYCHAIN_KEY);
     connect(ui->actionReset_OpenAI_API_key, SIGNAL(triggered()), this, SLOT(actionReset_OpenAI_API_key()));
     connect(ui->actionOpen_corrections_folder, SIGNAL(triggered()), this, SLOT(actionOpenCorrectionsFolder()));
-
-    connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &translation) {
-        ui->goButton->setEnabled(true);
-        QClipboard *clipboard = QGuiApplication::clipboard();
-        clipboard->setText(translation);
-        appDataWriter->writeTranslationLog(ui->inputText->toPlainText());
-        this->close();
-    });
-    connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
-        ui->goButton->setEnabled(true);
-        QMessageBox::warning(this, "Network Error", errorString);
-    });
+    connect(ui->actionGenerateMistakesReport, SIGNAL(triggered()), this, SLOT(actionGenerateMistakesReport()));
 }
 
 MainWindow::~MainWindow()
@@ -84,10 +62,29 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::retrieveOpenAIApiKey()
+{
+    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
+    connect(keychain, &KeyChainClass::keyRestored, this,
+            [=](const QString &key, const QString &value) {
+                openaiApiKey = value;
+            });
+    connect(keychain, &KeyChainClass::error, this,
+            [=](const QString &errorMessage) {
+                QString apiKey = "";
+                while (apiKey == "") {
+                    apiKey = QInputDialog::getText(this, "OpenAI API key missing", "Your API key is missing probably (" + errorMessage + "), please provide it below");
+                }
+                keychain->writeKey(OPENAI_API_KEY_KEYCHAIN_KEY, apiKey);
+                openaiApiKey = apiKey;
+            });
+    keychain->readKey(OPENAI_API_KEY_KEYCHAIN_KEY);
+}
+
 void MainWindow::actionOpenCorrectionsFolder()
 {
-    QString appDataPath = AppDataWriter::getAppDataPath();
-    QUrl folderUrl = QUrl::fromLocalFile(appDataPath);
+    auto appDataPath = AppDataManager::getAppDataPath();
+    auto folderUrl = QUrl::fromLocalFile(appDataPath);
     if (!folderUrl.isValid()) {
         QMessageBox::warning(this, "Error", "Invalid folder path: " + appDataPath);
         return;
@@ -103,16 +100,81 @@ void MainWindow::actionReset_OpenAI_API_key()
     keychain->deleteKey(OPENAI_API_KEY_KEYCHAIN_KEY);
 }
 
+void MainWindow::cleanupProgressAndCommunicator(QProgressDialog *progress, OpenAICommunicator *communicator, bool reenableWindow) {
+    if (progress) {
+        progress->close();
+        progress->deleteLater();
+    }
+    if (reenableWindow)
+        this->setEnabled(true);
+    if (communicator)
+        communicator->deleteLater();
+}
+
+void MainWindow::actionGenerateMistakesReport()
+{
+    if (openaiApiKey.isEmpty()) {
+        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+        return;
+    }
+    this->setEnabled(false);
+    auto progress = new QProgressDialog("Generating mistakes report...", QString(), 0, 0, this);
+    progress->setWindowModality(Qt::ApplicationModal);
+    progress->setCancelButton(nullptr);
+    progress->setMinimumDuration(0);
+    progress->show();
+
+    auto fileContent = appDataManager->getTodaysFileContent();
+    if (fileContent.isEmpty()) {
+        progress->close();
+        this->setEnabled(true);
+        QMessageBox::warning(this, "Error", "Could not open today's file.");
+        return;
+    }
+    auto sourceLang = ui->sourceLang->text();
+    auto prompt = QString("The below file is created by a user still learning %1. Find the top 5 grammatical mistakes and correct them. Provide the original text as-is along with the corrected text and provide a short explanation on what kind of mistake the user made. Separate the mistakes by two empty lines in-between. If there aren't enough grammatical errors, feel free to include within the list important spelling mistakes").arg(sourceLang);
+    auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
+    openaiCommunicator->setModelName(settingsManager->modelName());
+    openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
+    openaiCommunicator->sendRequest();
+    connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &report) mutable {
+        cleanupProgressAndCommunicator(progress, openaiCommunicator, true);
+        appDataManager->writeMistakesReport(report);
+    });
+    connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) mutable {
+        cleanupProgressAndCommunicator(progress, openaiCommunicator, true);
+        QMessageBox::warning(this, "Network Error", errorString);
+    });
+}
+
 void MainWindow::on_goButton_clicked()
 {
     if (!ui->goButton->isEnabled()) {
         return;
     }
+    if (openaiApiKey.isEmpty()) {
+        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+        return;
+    }
     ui->goButton->setDisabled(true);
-    QString inputText = ui->inputText->toPlainText();
-    QString sourceLang = ui->sourceLang->text();
-    QString targetLang = ui->targetLang->text();
+    auto inputText = ui->inputText->toPlainText();
+    auto sourceLang = ui->sourceLang->text();
+    auto targetLang = ui->targetLang->text();
+    auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
     openaiCommunicator->setModelName(settingsManager->modelName());
     openaiCommunicator->setPrompt(sourceLang, targetLang, inputText);
     openaiCommunicator->sendRequest();
+    connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &translation) {
+        ui->goButton->setEnabled(true);
+        auto clipboard = QGuiApplication::clipboard();
+        clipboard->setText(translation);
+        appDataManager->writeTranslationLog(ui->inputText->toPlainText());
+        this->close();
+        openaiCommunicator->deleteLater();
+    });
+    connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
+        ui->goButton->setEnabled(true);
+        QMessageBox::warning(this, "Network Error", errorString);
+        openaiCommunicator->deleteLater();
+    });
 }

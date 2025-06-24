@@ -4,15 +4,11 @@
 #include <QJsonArray>
 #include <QNetworkRequest>
 
-OpenAICommunicator::OpenAICommunicator(QObject *parent)
-    : QObject(parent)
+OpenAICommunicator::OpenAICommunicator(const QString &apiKey_, QObject *parent)
+    : QObject(parent), apiKey(apiKey_)
 {
     connect(&networkManager, &QNetworkAccessManager::finished,
             this, &OpenAICommunicator::handleNetworkReply);
-}
-
-void OpenAICommunicator::setApiKey(const QString &key) {
-    apiKey = key;
 }
 
 void OpenAICommunicator::setModelName(const QString &name) {
@@ -24,16 +20,20 @@ void OpenAICommunicator::setPrompt(const QString &sourceLang, const QString &tar
     prompt = QString("Translate from %1 to %2").arg(sourceLang, targetLang);
 }
 
+void OpenAICommunicator::setPromptRaw(const QString &prompt_) {
+    prompt = prompt_;
+}
+
 QString OpenAICommunicator::getPrompt() const {
     return prompt;
 }
 
 void OpenAICommunicator::sendRequest() {
-    QJsonObject json;
+    auto json = QJsonObject{};
     json["model"] = modelName.isEmpty() ? "gpt-4o-mini" : modelName;
 
-    QJsonArray messages;
-    QJsonObject message;
+    auto messages = QJsonArray{};
+    auto message = QJsonObject{};
     message["role"] = "user";
     message["content"] = prompt;
     messages.append(message);
@@ -43,7 +43,7 @@ void OpenAICommunicator::sendRequest() {
     });
     json["messages"] = messages;
 
-    QJsonObject schema;
+    auto schema = QJsonObject{};
     schema["type"] = "object";
     schema["properties"] = QJsonObject{
         {"translation", QJsonObject{{"type", "string"}}},
@@ -60,7 +60,7 @@ void OpenAICommunicator::sendRequest() {
                         }}
     };
 
-    QNetworkRequest request(QUrl("https://api.openai.com/v1/chat/completions"));
+    auto request = QNetworkRequest(QUrl("https://api.openai.com/v1/chat/completions"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", ("Bearer " + apiKey).toUtf8());
 
@@ -68,30 +68,30 @@ void OpenAICommunicator::sendRequest() {
 }
 
 void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
-    QByteArray responseData = reply->readAll();
+    auto responseData = reply->readAll();
     if (reply->error() != QNetworkReply::NoError) {
         emit errorOccurred(reply->errorString());
         reply->deleteLater();
         return;
     }
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
-    QJsonObject root = jsonDoc.object();
-    QJsonArray choices = root["choices"].toArray();
+    auto jsonDoc = QJsonDocument::fromJson(responseData);
+    auto root = jsonDoc.object();
+    auto choices = root["choices"].toArray();
     if (choices.isEmpty()) {
         emit errorOccurred("No choices returned.");
         reply->deleteLater();
         return;
     }
-    QJsonObject messageObj = choices[0].toObject()["message"].toObject();
-    QString contentStr = messageObj["content"].toString();
-    QJsonDocument contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
+    auto messageObj = choices[0].toObject()["message"].toObject();
+    auto contentStr = messageObj["content"].toString();
+    auto contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
     if (!contentDoc.isObject()) {
         emit errorOccurred("Failed to parse structured JSON.");
         reply->deleteLater();
         return;
     }
-    QJsonObject result = contentDoc.object();
-    QString translation = result["translation"].toString();
+    auto result = contentDoc.object();
+    auto translation = result["translation"].toString();
     emit replyReceived(translation);
     reply->deleteLater();
 } 

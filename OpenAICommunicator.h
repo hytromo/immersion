@@ -10,10 +10,10 @@
 class OpenAICommunicator : public QObject {
     Q_OBJECT
 public:
-    explicit OpenAICommunicator(QObject *parent = nullptr);
-    void setApiKey(const QString &apiKey);
+    explicit OpenAICommunicator(const QString &apiKey, QObject *parent = nullptr);
     void setModelName(const QString &modelName);
     void setPrompt(const QString &sourceLang, const QString &targetLang, const QString &inputText);
+    void setPromptRaw(const QString &prompt);
     void sendRequest();
     QString getPrompt() const;
 
