@@ -15,12 +15,21 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Concurrent)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
-        keychainclass.cpp
-        keychainclass.h
+    AppDataManager.cpp
+    AppDataManager.h
+    OpenAICommunicator.cpp
+    OpenAICommunicator.h
+    SettingsManager.cpp
+    SettingsManager.h
+    keychainclass.cpp
+    keychainclass.h
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
+    progressdialog.h
+    progressdialog.cpp
+    progressdialog.ui
 )
 
 
@@ -33,6 +42,7 @@ if (WIN32)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ${APP_ICON_RESOURCE_WINDOWS}
+        progressdialog.h progressdialog.cpp progressdialog.ui
     )
 #! [appicon_windows]
 elseif (APPLE)

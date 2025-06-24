@@ -2,17 +2,25 @@
 #define MAINWINDOW_H
 
 #include "keychainclass.h"
+#include "OpenAICommunicator.h"
+#include "AppDataManager.h"
+#include "SettingsManager.h"
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
 #include <QSettings>
+#include <QProgressDialog>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
+
+class OpenAICommunicator;
+class AppDataManager;
+class SettingsManager;
 
 class MainWindow : public QMainWindow
 {
@@ -21,24 +29,21 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    static const QString SETTINGS_MODEL_NAME_KEY;
-    static const QString SETTINGS_SOURCE_LANG_KEY;
-    static const QString SETTINGS_TARGET_LANG_KEY;
-    static const QString SETTINGS_LAST_INPUT_KEY;
-    static const QString OPENAI_API_KEY_KEYCHAIN_KEY;
-    QString openaiApiKey;
-    QString lastInputText;
 
 private slots:
     void on_goButton_clicked();
     void actionReset_OpenAI_API_key();
     void actionOpenCorrectionsFolder();
-    void handleNetworkReply(QNetworkReply *reply);
+    void actionGenerateMistakesReport();
+
 private:
     Ui::MainWindow *ui;
-    QNetworkAccessManager *networkManager;
-    QSettings *settings;
     KeyChainClass *keychain;
+    AppDataManager *appDataManager;
+    SettingsManager *settingsManager;
+    QString openaiApiKey;
 
+    void retrieveOpenAIApiKey();
+    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
 };
 #endif // MAINWINDOW_H

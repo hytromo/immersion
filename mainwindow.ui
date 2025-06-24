@@ -94,6 +94,7 @@
     </property>
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="actionOpen_corrections_folder"/>
+    <addaction name="actionGenerateMistakesReport"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -105,6 +106,11 @@
   <action name="actionOpen_corrections_folder">
    <property name="text">
     <string>Open corrections folder</string>
+   </property>
+  </action>
+  <action name="actionGenerateMistakesReport">
+   <property name="text">
+    <string>Generate mistakes report for today</string>
    </property>
   </action>
  </widget>
