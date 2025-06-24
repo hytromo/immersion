@@ -38,6 +38,7 @@ jobs:
           echo "RELEASE_VERSION=pr-${{ github.event.number }}" >> $GITHUB_ENV
         else
           echo "RELEASE_VERSION=dev" >> $GITHUB_ENV
+        fi
 
     - uses: actions/checkout@v4
       with:
