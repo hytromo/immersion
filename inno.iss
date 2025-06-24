@@ -1,6 +1,8 @@
+#define MyAppVersion GetEnv('RELEASE_VERSION')
+
 [Setup]
 AppName=Immersion
-AppVersion=0.0.3
+AppVersion={#MyAppVersion}
 DefaultDirName={pf}\Immersion
 DefaultGroupName=Immersion
 OutputDir=build\installer
