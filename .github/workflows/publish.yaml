@@ -117,6 +117,7 @@ jobs:
         flatpak build-export flatpak-build-export flatpak-build
         flatpak build-bundle flatpak-build-export Immersion.flatpak io.github.hytromo.immersion
         mv Immersion.flatpak "Immersion-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.flatpak"
+        echo "Resulting file available at: Immersion-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.flatpak"
 
     - name: Run windeployqt to gather dependencies
       if: startsWith(matrix.arch, 'windows')
@@ -139,7 +140,7 @@ jobs:
           "$BUILD_RELEASE_DMG" \
           build/Release/
         mv "$BUILD_RELEASE_DMG" "Immersion-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg"
-
+        echo "Resulting file available at: Immersion-${{ env.RELEASE_VERSION }}-${{ matrix.arch }}.dmg"
 
     - name: Build Windows Installer using Inno Setup
       if: startsWith(matrix.arch, 'windows')
@@ -149,6 +150,7 @@ jobs:
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" inno.iss
         $installerName = "ImmersionSetup-$env:RELEASE_VERSION-${{ matrix.arch }}.exe"
         Rename-Item -Path "build/installer/ImmersionSetup.exe" -NewName $installerName
+        echo "Resulting file available at: $installerName"
 
     - name: Release Windows
       if: startsWith(matrix.arch, 'windows') && github.ref_type == 'tag'
