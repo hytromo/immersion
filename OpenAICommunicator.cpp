@@ -70,7 +70,7 @@ void OpenAICommunicator::sendRequest() {
 void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
     auto responseData = reply->readAll();
     if (reply->error() != QNetworkReply::NoError) {
-        emit errorOccurred(reply->errorString());
+        emit errorOccurred(reply->errorString() + " " + responseData);
         reply->deleteLater();
         return;
     }

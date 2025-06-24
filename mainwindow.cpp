@@ -4,6 +4,7 @@
 #include "OpenAICommunicator.h"
 #include "AppDataManager.h"
 #include "SettingsManager.h"
+#include "progressdialog.h"
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -100,15 +101,15 @@ void MainWindow::actionReset_OpenAI_API_key()
     keychain->deleteKey(OPENAI_API_KEY_KEYCHAIN_KEY);
 }
 
-void MainWindow::cleanupProgressAndCommunicator(QProgressDialog *progress, OpenAICommunicator *communicator, bool reenableWindow) {
+void MainWindow::cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator) {
     if (progress) {
         progress->close();
         progress->deleteLater();
     }
-    if (reenableWindow)
-        this->setEnabled(true);
     if (communicator)
         communicator->deleteLater();
+
+    this->setEnabled(true);
 }
 
 void MainWindow::actionGenerateMistakesReport()
@@ -118,31 +119,27 @@ void MainWindow::actionGenerateMistakesReport()
         return;
     }
     this->setEnabled(false);
-    auto progress = new QProgressDialog("Generating mistakes report...", QString(), 0, 0, this);
-    progress->setWindowModality(Qt::ApplicationModal);
-    progress->setCancelButton(nullptr);
-    progress->setMinimumDuration(0);
+    auto progress = new ProgressDialog(this);
+    auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
     progress->show();
 
     auto fileContent = appDataManager->getTodaysFileContent();
     if (fileContent.isEmpty()) {
-        progress->close();
-        this->setEnabled(true);
+        cleanupProgressAndCommunicator(progress, openaiCommunicator);
         QMessageBox::warning(this, "Error", "Could not open today's file.");
         return;
     }
     auto sourceLang = ui->sourceLang->text();
-    auto prompt = QString("The below file is created by a user still learning %1. Find the top 5 grammatical mistakes and correct them. Provide the original text as-is along with the corrected text and provide a short explanation on what kind of mistake the user made. Separate the mistakes by two empty lines in-between. If there aren't enough grammatical errors, feel free to include within the list important spelling mistakes").arg(sourceLang);
-    auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
-    openaiCommunicator->setModelName(settingsManager->modelName());
+    auto prompt = QString("The below file is created by a user still learning %1. Find the top 5 grammatical mistakes and correct them. Provide the original text as-is along with the corrected text and provide a short explanation in English on what kind of mistake the user made. Separate the mistakes by two empty lines in-between. If there aren't enough grammatical errors, feel free to include within the list important spelling mistakes").arg(sourceLang);
+    openaiCommunicator->setModelName(settingsManager->reportModelName());
     openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
     openaiCommunicator->sendRequest();
     connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &report) mutable {
-        cleanupProgressAndCommunicator(progress, openaiCommunicator, true);
+        cleanupProgressAndCommunicator(progress, openaiCommunicator);
         appDataManager->writeMistakesReport(report);
     });
     connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) mutable {
-        cleanupProgressAndCommunicator(progress, openaiCommunicator, true);
+        cleanupProgressAndCommunicator(progress, openaiCommunicator);
         QMessageBox::warning(this, "Network Error", errorString);
     });
 }
@@ -161,7 +158,7 @@ void MainWindow::on_goButton_clicked()
     auto sourceLang = ui->sourceLang->text();
     auto targetLang = ui->targetLang->text();
     auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
-    openaiCommunicator->setModelName(settingsManager->modelName());
+    openaiCommunicator->setModelName(settingsManager->translationModelName());
     openaiCommunicator->setPrompt(sourceLang, targetLang, inputText);
     openaiCommunicator->sendRequest();
     connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &translation) {

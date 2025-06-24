@@ -26,6 +26,10 @@ set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
+    mainwindow.ui
+    progressdialog.h
+    progressdialog.cpp
+    progressdialog.ui
 )
 
 
@@ -38,6 +42,7 @@ if (WIN32)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ${APP_ICON_RESOURCE_WINDOWS}
+        progressdialog.h progressdialog.cpp progressdialog.ui
     )
 #! [appicon_windows]
 elseif (APPLE)

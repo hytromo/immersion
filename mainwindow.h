@@ -44,6 +44,6 @@ private:
     QString openaiApiKey;
 
     void retrieveOpenAIApiKey();
-    void cleanupProgressAndCommunicator(QProgressDialog *progress, OpenAICommunicator *communicator, bool reenableWindow = true);
+    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
 };
 #endif // MAINWINDOW_H

@@ -1,6 +1,7 @@
 #include "SettingsManager.h"
 
-const QString SETTINGS_MODEL_NAME_KEY = "model_name";
+const QString SETTINGS_TRANSLATION_MODEL_NAME_KEY = "translation_model_name";
+const QString SETTINGS_REPORT_MODEL_NAME_KEY = "report_model_name";
 const QString SETTINGS_SOURCE_LANG_KEY = "sourceLang";
 const QString SETTINGS_TARGET_LANG_KEY = "targetLang";
 const QString SETTINGS_LAST_INPUT_KEY = "lastInputText";
@@ -10,11 +11,17 @@ SettingsManager::SettingsManager(QObject *parent)
 {
 }
 
-QString SettingsManager::modelName() const {
-    return settings.value(SETTINGS_MODEL_NAME_KEY, "gpt-4o-mini").toString();
+QString SettingsManager::translationModelName() const {
+    return settings.value(SETTINGS_TRANSLATION_MODEL_NAME_KEY, "gpt-4o-mini").toString();
 }
-void SettingsManager::setModelName(const QString &name) {
-    settings.setValue(SETTINGS_MODEL_NAME_KEY, name);
+void SettingsManager::setTranslationModelName(const QString &name) {
+    settings.setValue(SETTINGS_TRANSLATION_MODEL_NAME_KEY, name);
+}
+QString SettingsManager::reportModelName() const {
+    return settings.value(SETTINGS_REPORT_MODEL_NAME_KEY, "o3").toString();
+}
+void SettingsManager::setReportModelName(const QString &name) {
+    settings.setValue(SETTINGS_REPORT_MODEL_NAME_KEY, name);
 }
 QString SettingsManager::sourceLang() const {
     return settings.value(SETTINGS_SOURCE_LANG_KEY, "Danish").toString();

@@ -9,8 +9,10 @@ class SettingsManager : public QObject {
     Q_OBJECT
 public:
     explicit SettingsManager(QObject *parent = nullptr);
-    QString modelName() const;
-    void setModelName(const QString &name);
+    QString translationModelName() const;
+    void setTranslationModelName(const QString &name);
+    QString reportModelName() const;
+    void setReportModelName(const QString &name);
     QString sourceLang() const;
     void setSourceLang(const QString &lang);
     QString targetLang() const;
