@@ -26,6 +26,11 @@
 #include <QProgressDialog>
 #include <QFile>
 #include <QDate>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -51,6 +56,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionReset_OpenAI_API_key, SIGNAL(triggered()), this, SLOT(actionReset_OpenAI_API_key()));
     connect(ui->actionOpen_corrections_folder, SIGNAL(triggered()), this, SLOT(actionOpenCorrectionsFolder()));
     connect(ui->actionGenerateMistakesReport, SIGNAL(triggered()), this, SLOT(actionGenerateMistakesReport()));
+    connect(ui->actionHelp, SIGNAL(triggered()), this, SLOT(actionHelp()));
+    connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(actionQuit()));
+    connect(ui->actionEditTranslationModel, SIGNAL(triggered()), this, SLOT(actionEditTranslationModel()));
+    connect(ui->actionEditReportsModel, SIGNAL(triggered()), this, SLOT(actionEditReportsModel()));
 }
 
 MainWindow::~MainWindow()
@@ -72,14 +81,22 @@ void MainWindow::retrieveOpenAIApiKey()
             });
     connect(keychain, &KeyChainClass::error, this,
             [=](const QString &errorMessage) {
-                QString apiKey = "";
-                while (apiKey == "") {
-                    apiKey = QInputDialog::getText(this, "OpenAI API key missing", "Your API key is missing probably (" + errorMessage + "), please provide it below");
-                }
-                keychain->writeKey(OPENAI_API_KEY_KEYCHAIN_KEY, apiKey);
-                openaiApiKey = apiKey;
+                requestApiKeyPopup();
             });
     keychain->readKey(OPENAI_API_KEY_KEYCHAIN_KEY);
+}
+
+void MainWindow::requestApiKeyPopup()
+{
+    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
+    
+    ApiKeyDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        openaiApiKey = dialog.getApiKey();
+        if (!openaiApiKey.isEmpty()) {
+            keychain->writeKey(OPENAI_API_KEY_KEYCHAIN_KEY, openaiApiKey);
+        }
+    }
 }
 
 void MainWindow::actionOpenCorrectionsFolder()
@@ -99,6 +116,8 @@ void MainWindow::actionReset_OpenAI_API_key()
 {
     static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
     keychain->deleteKey(OPENAI_API_KEY_KEYCHAIN_KEY);
+    openaiApiKey = "";
+    requestApiKeyPopup();
 }
 
 void MainWindow::cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator) {
@@ -174,4 +193,39 @@ void MainWindow::on_goButton_clicked()
         QMessageBox::warning(this, "Network Error", errorString);
         openaiCommunicator->deleteLater();
     });
+}
+
+void MainWindow::actionHelp()
+{
+    QUrl url("https://github.com/hytromo/immersion");
+    QDesktopServices::openUrl(url);
+}
+
+void MainWindow::actionQuit()
+{
+    close();
+}
+
+void MainWindow::actionEditTranslationModel()
+{
+    QString currentModel = settingsManager->translationModelName();
+    QString newModel = QInputDialog::getText(this, "Edit Translation Model", 
+                                           "Enter the translation model name:", 
+                                           QLineEdit::Normal, currentModel);
+    if (!newModel.isEmpty() && newModel != currentModel) {
+        settingsManager->setTranslationModelName(newModel);
+        settingsManager->sync();
+    }
+}
+
+void MainWindow::actionEditReportsModel()
+{
+    QString currentModel = settingsManager->reportModelName();
+    QString newModel = QInputDialog::getText(this, "Edit Reports Model", 
+                                           "Enter the reports model name:", 
+                                           QLineEdit::Normal, currentModel);
+    if (!newModel.isEmpty() && newModel != currentModel) {
+        settingsManager->setReportModelName(newModel);
+        settingsManager->sync();
+    }
 }

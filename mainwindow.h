@@ -5,12 +5,21 @@
 #include "OpenAICommunicator.h"
 #include "AppDataManager.h"
 #include "SettingsManager.h"
+#include "ApiKeyDialog.h"
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
 #include <QSettings>
 #include <QProgressDialog>
+#include <QDialog>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QDesktopServices>
+#include <QUrl>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -35,6 +44,10 @@ private slots:
     void actionReset_OpenAI_API_key();
     void actionOpenCorrectionsFolder();
     void actionGenerateMistakesReport();
+    void actionHelp();
+    void actionQuit();
+    void actionEditTranslationModel();
+    void actionEditReportsModel();
 
 private:
     Ui::MainWindow *ui;
@@ -44,6 +57,7 @@ private:
     QString openaiApiKey;
 
     void retrieveOpenAIApiKey();
+    void requestApiKeyPopup();
     void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
 };
 #endif // MAINWINDOW_H
