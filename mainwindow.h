@@ -35,6 +35,10 @@ private slots:
     void actionReset_OpenAI_API_key();
     void actionOpenCorrectionsFolder();
     void actionGenerateMistakesReport();
+    void actionHelp();
+    void actionQuit();
+    void actionEditTranslationModel();
+    void actionEditReportsModel();
 
 private:
     Ui::MainWindow *ui;
