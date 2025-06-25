@@ -18,7 +18,7 @@ void SettingsManager::setTranslationModelName(const QString &name) {
     settings.setValue(SETTINGS_TRANSLATION_MODEL_NAME_KEY, name);
 }
 QString SettingsManager::reportModelName() const {
-    return settings.value(SETTINGS_REPORT_MODEL_NAME_KEY, "o3").toString();
+    return settings.value(SETTINGS_REPORT_MODEL_NAME_KEY, "gpt-4.1").toString();
 }
 void SettingsManager::setReportModelName(const QString &name) {
     settings.setValue(SETTINGS_REPORT_MODEL_NAME_KEY, name);
