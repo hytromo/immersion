@@ -30,6 +30,8 @@ set(PROJECT_SOURCES
     progressdialog.h
     progressdialog.cpp
     progressdialog.ui
+    ApiKeyDialog.cpp
+    ApiKeyDialog.h
 )
 
 

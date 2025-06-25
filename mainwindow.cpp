@@ -26,6 +26,11 @@
 #include <QProgressDialog>
 #include <QFile>
 #include <QDate>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -76,14 +81,22 @@ void MainWindow::retrieveOpenAIApiKey()
             });
     connect(keychain, &KeyChainClass::error, this,
             [=](const QString &errorMessage) {
-                QString apiKey = "";
-                while (apiKey == "") {
-                    apiKey = QInputDialog::getText(this, "OpenAI API key missing", "Your API key is missing probably (" + errorMessage + "), please provide it below");
-                }
-                keychain->writeKey(OPENAI_API_KEY_KEYCHAIN_KEY, apiKey);
-                openaiApiKey = apiKey;
+                requestApiKeyPopup();
             });
     keychain->readKey(OPENAI_API_KEY_KEYCHAIN_KEY);
+}
+
+void MainWindow::requestApiKeyPopup()
+{
+    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
+    
+    ApiKeyDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        openaiApiKey = dialog.getApiKey();
+        if (!openaiApiKey.isEmpty()) {
+            keychain->writeKey(OPENAI_API_KEY_KEYCHAIN_KEY, openaiApiKey);
+        }
+    }
 }
 
 void MainWindow::actionOpenCorrectionsFolder()
@@ -103,6 +116,8 @@ void MainWindow::actionReset_OpenAI_API_key()
 {
     static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
     keychain->deleteKey(OPENAI_API_KEY_KEYCHAIN_KEY);
+    openaiApiKey = "";
+    requestApiKeyPopup();
 }
 
 void MainWindow::cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator) {
