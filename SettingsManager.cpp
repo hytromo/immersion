@@ -11,8 +11,8 @@ const QString SETTINGS_MESSAGE_HISTORY_KEY = "message_history";
 const int MAX_HISTORY_SIZE = 5;
 
 // Default prompts
-const QString DEFAULT_TRANSLATION_PROMPT = "Translate from %sourceLang to %targetLang";
-const QString DEFAULT_REPORT_PROMPT = "The below file is created by a user still learning %sourceLang. Find the top 5 grammatical mistakes and correct them. Provide the original text as-is along with the corrected text and provide a short explanation in English on what kind of mistake the user made. Separate the mistakes by two empty lines in-between. If there aren't enough grammatical errors, feel free to include within the list important spelling mistakes";
+const QString DEFAULT_TRANSLATION_PROMPT = "You are an expert %sourceLang to %targetLang translator. Translate this text making sure to match the tone and style of the original.";
+const QString DEFAULT_REPORT_PROMPT = "You are an expert %sourceLang teacher. Find the top 5 grammatical mistakes in this %sourceLang text and correct them. Format each mistake as:\n\nORIGINAL: [mistake]\nCORRECTED: [correction]\nEXPLANATION: [brief English explanation]\n\nSeparate entries with two empty lines. If fewer than 5 grammatical errors exist, include important spelling mistakes.";
 
 SettingsManager::SettingsManager(QObject *parent)
     : QObject(parent), settings(parent)
