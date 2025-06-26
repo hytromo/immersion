@@ -10,8 +10,10 @@ public:
     explicit AppDataManager(QObject *parent = nullptr);
     void writeTranslationLog(const QString &inputText);
     void writeMistakesReport(const QString &report);
+    void writeMistakesReport(const QString &report, const QString &dateString);
     static QString getAppDataPath();
     QString getTodaysFileContent() const;
+    QString getFileContentForDate(const QString &dateString) const;
 };
 
 #endif // APPDATAMANAGER_H 

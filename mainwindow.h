@@ -6,6 +6,7 @@
 #include "AppDataManager.h"
 #include "SettingsManager.h"
 #include "ApiKeyDialog.h"
+#include "PromptEditDialog.h"
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
@@ -20,6 +21,8 @@
 #include <QHBoxLayout>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QDate>
+#include <QLocale>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -48,6 +51,10 @@ private slots:
     void actionQuit();
     void actionEditTranslationModel();
     void actionEditReportsModel();
+    void actionEditTranslationPrompt();
+    void actionEditReportPrompt();
+    void onHistoryActionTriggered();
+    void onGenerateReportActionTriggered();
 
 private:
     Ui::MainWindow *ui;
@@ -59,5 +66,10 @@ private:
     void retrieveOpenAIApiKey();
     void requestApiKeyPopup();
     void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
+    void setupHistoryMenu();
+    void addMessageToHistory(const QString &message);
+    void setupGenerateReportMenu();
+    QString formatDateForDisplay(const QDate &date);
+    void generateReportForDate(const QString &dateString);
 };
 #endif // MAINWINDOW_H

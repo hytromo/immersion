@@ -31,6 +31,8 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include <QUrl>
+#include <QLocale>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -55,11 +57,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionReset_OpenAI_API_key, SIGNAL(triggered()), this, SLOT(actionReset_OpenAI_API_key()));
     connect(ui->actionOpen_corrections_folder, SIGNAL(triggered()), this, SLOT(actionOpenCorrectionsFolder()));
-    connect(ui->actionGenerateMistakesReport, SIGNAL(triggered()), this, SLOT(actionGenerateMistakesReport()));
     connect(ui->actionHelp, SIGNAL(triggered()), this, SLOT(actionHelp()));
     connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(actionQuit()));
     connect(ui->actionEditTranslationModel, SIGNAL(triggered()), this, SLOT(actionEditTranslationModel()));
     connect(ui->actionEditReportsModel, SIGNAL(triggered()), this, SLOT(actionEditReportsModel()));
+    connect(ui->actionEditTranslationPrompt, SIGNAL(triggered()), this, SLOT(actionEditTranslationPrompt()));
+    connect(ui->actionEditReportPrompt, SIGNAL(triggered()), this, SLOT(actionEditReportPrompt()));
+    
+    setupHistoryMenu();
+    setupGenerateReportMenu();
 }
 
 MainWindow::~MainWindow()
@@ -149,7 +155,8 @@ void MainWindow::actionGenerateMistakesReport()
         return;
     }
     auto sourceLang = ui->sourceLang->text();
-    auto prompt = QString("The below file is created by a user still learning %1. Find the top 5 grammatical mistakes and correct them. Provide the original text as-is along with the corrected text and provide a short explanation in English on what kind of mistake the user made. Separate the mistakes by two empty lines in-between. If there aren't enough grammatical errors, feel free to include within the list important spelling mistakes").arg(sourceLang);
+    QString promptTemplate = settingsManager->reportPrompt();
+    QString prompt = promptTemplate.replace("%sourceLang", sourceLang);
     openaiCommunicator->setModelName(settingsManager->reportModelName());
     openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
     openaiCommunicator->sendRequest();
@@ -176,9 +183,13 @@ void MainWindow::on_goButton_clicked()
     auto inputText = ui->inputText->toPlainText();
     auto sourceLang = ui->sourceLang->text();
     auto targetLang = ui->targetLang->text();
+    
+    // Add message to history
+    addMessageToHistory(inputText);
+    
     auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
     openaiCommunicator->setModelName(settingsManager->translationModelName());
-    openaiCommunicator->setPrompt(sourceLang, targetLang, inputText);
+    openaiCommunicator->setPromptWithTemplate(settingsManager->translationPrompt(), sourceLang, targetLang, inputText);
     openaiCommunicator->sendRequest();
     connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &translation) {
         ui->goButton->setEnabled(true);
@@ -228,4 +239,207 @@ void MainWindow::actionEditReportsModel()
         settingsManager->setReportModelName(newModel);
         settingsManager->sync();
     }
+}
+
+void MainWindow::actionEditTranslationPrompt()
+{
+    PromptEditDialog dialog(PromptType::Translation, this);
+    dialog.setPrompt(settingsManager->translationPrompt());
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QString newPrompt = dialog.getPrompt();
+        if (!newPrompt.isEmpty()) {
+            settingsManager->setTranslationPrompt(newPrompt);
+            settingsManager->sync();
+        }
+    }
+}
+
+void MainWindow::actionEditReportPrompt()
+{
+    PromptEditDialog dialog(PromptType::Report, this);
+    dialog.setPrompt(settingsManager->reportPrompt());
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QString newPrompt = dialog.getPrompt();
+        if (!newPrompt.isEmpty()) {
+            settingsManager->setReportPrompt(newPrompt);
+            settingsManager->sync();
+        }
+    }
+}
+
+void MainWindow::setupHistoryMenu()
+{
+    // Clear existing history actions
+    ui->menuHistory->clear();
+    
+    // Get the message history
+    QStringList history = settingsManager->getMessageHistory();
+    
+    if (history.isEmpty()) {
+        // Add a disabled "No history" action
+        QAction *noHistoryAction = new QAction("No history", this);
+        noHistoryAction->setEnabled(false);
+        ui->menuHistory->addAction(noHistoryAction);
+    } else {
+        // Add history actions
+        for (int i = 0; i < history.size(); ++i) {
+            QString message = history[i];
+            // Truncate long messages for display
+            QString displayText = message.length() > 50 ? message.left(47) + "..." : message;
+            
+            QAction *historyAction = new QAction(displayText, this);
+            historyAction->setData(message); // Store the full message
+            historyAction->setToolTip(message); // Show full message in tooltip
+            
+            connect(historyAction, &QAction::triggered, this, &MainWindow::onHistoryActionTriggered);
+            ui->menuHistory->addAction(historyAction);
+        }
+    }
+}
+
+void MainWindow::addMessageToHistory(const QString &message)
+{
+    settingsManager->addMessageToHistory(message);
+    setupHistoryMenu(); // Refresh the menu
+}
+
+void MainWindow::onHistoryActionTriggered()
+{
+    QAction *action = qobject_cast<QAction*>(sender());
+    if (action) {
+        QString message = action->data().toString();
+        if (!message.isEmpty()) {
+            ui->inputText->setPlainText(message);
+            ui->inputText->selectAll(); // Select all text for easy replacement
+        }
+    }
+}
+
+void MainWindow::setupGenerateReportMenu()
+{
+    // Clear existing report actions
+    ui->menuGenerateReport->clear();
+    
+    // Get the app data path
+    QString appDataPath = AppDataManager::getAppDataPath();
+    QDir appDataDir(appDataPath);
+    
+    // Get all .txt files in the app data directory
+    QStringList filters;
+    filters << "*.txt";
+    QFileInfoList files = appDataDir.entryInfoList(filters, QDir::Files, QDir::Time);
+    
+    // Create a list of available dates (last 10 days)
+    QList<QDate> availableDates;
+    QDate today = QDate::currentDate();
+    
+    // Check the last 10 days
+    for (int i = 0; i < 10; ++i) {
+        QDate checkDate = today.addDays(-i);
+        QString expectedFileName = checkDate.toString("yyyy-MM-dd") + ".txt";
+        
+        // Check if file exists
+        bool fileExists = false;
+        for (const QFileInfo &fileInfo : files) {
+            if (fileInfo.fileName() == expectedFileName) {
+                fileExists = true;
+                break;
+            }
+        }
+        
+        if (fileExists) {
+            availableDates.append(checkDate);
+        }
+    }
+    
+    if (availableDates.isEmpty()) {
+        // Add a disabled "No data available" action
+        QAction *noDataAction = new QAction("No data available", this);
+        noDataAction->setEnabled(false);
+        ui->menuGenerateReport->addAction(noDataAction);
+    } else {
+        // Add actions for each available date
+        for (const QDate &date : availableDates) {
+            QString displayText = formatDateForDisplay(date);
+            QAction *reportAction = new QAction(displayText, this);
+            reportAction->setData(date.toString("yyyy-MM-dd")); // Store the date as data
+            
+            connect(reportAction, &QAction::triggered, this, &MainWindow::onGenerateReportActionTriggered);
+            ui->menuGenerateReport->addAction(reportAction);
+        }
+    }
+}
+
+QString MainWindow::formatDateForDisplay(const QDate &date)
+{
+    int day = date.day();
+    QString daySuffix;
+    
+    // Determine the correct suffix for the day
+    if (day >= 11 && day <= 13) {
+        daySuffix = "th";
+    } else {
+        switch (day % 10) {
+            case 1: daySuffix = "st"; break;
+            case 2: daySuffix = "nd"; break;
+            case 3: daySuffix = "rd"; break;
+            default: daySuffix = "th"; break;
+        }
+    }
+    
+    QLocale locale;
+    QString monthName = locale.monthName(date.month(), QLocale::LongFormat);
+    int year = date.year();
+    
+    return QString("%1%2 of %3 %4").arg(day).arg(daySuffix).arg(monthName).arg(year);
+}
+
+void MainWindow::onGenerateReportActionTriggered()
+{
+    QAction *action = qobject_cast<QAction*>(sender());
+    if (action) {
+        QString dateString = action->data().toString();
+        if (!dateString.isEmpty()) {
+            generateReportForDate(dateString);
+        }
+    }
+}
+
+void MainWindow::generateReportForDate(const QString &dateString)
+{
+    if (openaiApiKey.isEmpty()) {
+        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+        return;
+    }
+    
+    this->setEnabled(false);
+    auto progress = new ProgressDialog(this);
+    auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
+    progress->show();
+
+    auto fileContent = appDataManager->getFileContentForDate(dateString);
+    if (fileContent.isEmpty()) {
+        cleanupProgressAndCommunicator(progress, openaiCommunicator);
+        QMessageBox::warning(this, "Error", "Could not open file for " + dateString + ".");
+        return;
+    }
+    
+    auto sourceLang = ui->sourceLang->text();
+    QString promptTemplate = settingsManager->reportPrompt();
+    QString prompt = promptTemplate.replace("%sourceLang", sourceLang);
+    openaiCommunicator->setModelName(settingsManager->reportModelName());
+    openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
+    openaiCommunicator->sendRequest();
+    
+    connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &report) mutable {
+        cleanupProgressAndCommunicator(progress, openaiCommunicator);
+        appDataManager->writeMistakesReport(report, dateString);
+    });
+    
+    connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) mutable {
+        cleanupProgressAndCommunicator(progress, openaiCommunicator);
+        QMessageBox::warning(this, "Network Error", errorString);
+    });
 }
