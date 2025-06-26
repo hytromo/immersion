@@ -92,10 +92,27 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionOpen_corrections_folder"/>
-    <addaction name="actionGenerateMistakesReport"/>
+    <widget class="QMenu" name="menuHistory">
+     <property name="title">
+      <string>History</string>
+     </property>
+    </widget>
+    <addaction name="separator"/>
+    <addaction name="menuHistory"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuReports">
+    <property name="title">
+     <string>Reports</string>
+    </property>
+    <addaction name="actionOpen_corrections_folder"/>
+    <addaction name="menuGenerateReport"/>
+   </widget>
+   <widget class="QMenu" name="menuGenerateReport">
+    <property name="title">
+     <string>Generate report</string>
+    </property>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -108,9 +125,17 @@
      <addaction name="actionEditTranslationModel"/>
      <addaction name="actionEditReportsModel"/>
     </widget>
+    <widget class="QMenu" name="menuEdit_prompts">
+     <property name="title">
+      <string>Edit prompts</string>
+     </property>
+     <addaction name="actionEditTranslationPrompt"/>
+     <addaction name="actionEditReportPrompt"/>
+    </widget>
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="separator"/>
     <addaction name="menuEdit_models"/>
+    <addaction name="menuEdit_prompts"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
@@ -119,6 +144,7 @@
     <addaction name="actionHelp"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuReports"/>
    <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
   </widget>
@@ -129,12 +155,12 @@
   </action>
   <action name="actionOpen_corrections_folder">
    <property name="text">
-    <string>Open corrections folder</string>
+    <string>Open reports folder</string>
    </property>
   </action>
   <action name="actionGenerateMistakesReport">
    <property name="text">
-    <string>Generate mistakes report for today</string>
+    <string>Generate report for today</string>
    </property>
   </action>
   <action name="actionHelp">
@@ -178,6 +204,16 @@
   <action name="actionEdit_reports_model">
    <property name="text">
     <string>Edit reports model</string>
+   </property>
+  </action>
+  <action name="actionEditTranslationPrompt">
+   <property name="text">
+    <string>Edit translation prompt</string>
+   </property>
+  </action>
+  <action name="actionEditReportPrompt">
+   <property name="text">
+    <string>Edit report prompt</string>
    </property>
   </action>
  </widget>

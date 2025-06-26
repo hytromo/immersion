@@ -46,6 +46,18 @@ QString AppDataManager::getTodaysFileContent() const {
     return QString();
 }
 
+QString AppDataManager::getFileContentForDate(const QString &dateString) const {
+    QString appDataPath = getAppDataPath();
+    QString filePath = appDataPath + "/" + dateString + ".txt";
+    QFile file(filePath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString content = file.readAll();
+        file.close();
+        return content;
+    }
+    return QString();
+}
+
 void AppDataManager::writeMistakesReport(const QString &report) {
     QString appDataPath = getAppDataPath();
     QDir dir(appDataPath);
@@ -54,6 +66,31 @@ void AppDataManager::writeMistakesReport(const QString &report) {
     }
     
     QString fileName = QDate::currentDate().toString("yyyy-MM-dd") + "-report.txt";
+    QString filePath = appDataPath + "/" + fileName;
+    
+    QFile file(filePath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(report.toUtf8());
+        file.close();
+        
+        // Open the folder automatically
+        auto folderUrl = QUrl::fromLocalFile(appDataPath);
+        if (folderUrl.isValid()) {
+            (void)QtConcurrent::run([folderUrl]() {
+                QDesktopServices::openUrl(folderUrl);
+            });
+        }
+    }
+}
+
+void AppDataManager::writeMistakesReport(const QString &report, const QString &dateString) {
+    QString appDataPath = getAppDataPath();
+    QDir dir(appDataPath);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    
+    QString fileName = dateString + "-report.txt";
     QString filePath = appDataPath + "/" + fileName;
     
     QFile file(filePath);

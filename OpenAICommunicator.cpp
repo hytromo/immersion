@@ -20,6 +20,14 @@ void OpenAICommunicator::setPrompt(const QString &sourceLang, const QString &tar
     prompt = QString("Translate from %1 to %2").arg(sourceLang, targetLang);
 }
 
+void OpenAICommunicator::setPromptWithTemplate(const QString &promptTemplate, const QString &sourceLang, const QString &targetLang, const QString &inputText_) {
+    inputText = inputText_;
+    QString processedPrompt = promptTemplate;
+    processedPrompt.replace("%sourceLang", sourceLang);
+    processedPrompt.replace("%targetLang", targetLang);
+    prompt = processedPrompt;
+}
+
 void OpenAICommunicator::setPromptRaw(const QString &prompt_) {
     prompt = prompt_;
 }
