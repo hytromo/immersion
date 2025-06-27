@@ -67,6 +67,8 @@ QString PromptEditDialog::getPromptTypeName() const
             return "Translation";
         case PromptType::Report:
             return "Report";
+        case PromptType::Feedback:
+            return "Feedback";
         default:
             return "Unknown";
     }
@@ -78,6 +80,8 @@ QString PromptEditDialog::getVariableInfo() const
         case PromptType::Translation:
             return "Use %sourceLang and %targetLang as variables.";
         case PromptType::Report:
+            return "Use %sourceLang as a variable.";
+        case PromptType::Feedback:
             return "Use %sourceLang as a variable.";
         default:
             return "";
@@ -92,6 +96,8 @@ QString PromptEditDialog::getDefaultPrompt() const
             return tempManager.getDefaultTranslationPrompt();
         case PromptType::Report:
             return tempManager.getDefaultReportPrompt();
+        case PromptType::Feedback:
+            return tempManager.getDefaultFeedbackPrompt();
         default:
             return QString();
     }

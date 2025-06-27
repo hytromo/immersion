@@ -34,6 +34,8 @@ set(PROJECT_SOURCES
     ApiKeyDialog.h
     PromptEditDialog.cpp
     PromptEditDialog.h
+    FeedbackDialog.cpp
+    FeedbackDialog.h
 )
 
 

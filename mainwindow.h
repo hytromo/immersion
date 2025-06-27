@@ -7,6 +7,7 @@
 #include "SettingsManager.h"
 #include "ApiKeyDialog.h"
 #include "PromptEditDialog.h"
+#include "FeedbackDialog.h"
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
@@ -51,8 +52,10 @@ private slots:
     void actionQuit();
     void actionEditTranslationModel();
     void actionEditReportsModel();
+    void actionEditFeedbackModel();
     void actionEditTranslationPrompt();
     void actionEditReportPrompt();
+    void actionEditFeedbackPrompt();
     void onHistoryActionTriggered();
     void onGenerateReportActionTriggered();
 

@@ -12,7 +12,8 @@
 
 enum class PromptType {
     Translation,
-    Report
+    Report,
+    Feedback
 };
 
 class PromptEditDialog : public QDialog
