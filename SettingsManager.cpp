@@ -2,17 +2,20 @@
 
 const QString SETTINGS_TRANSLATION_MODEL_NAME_KEY = "translation_model_name";
 const QString SETTINGS_REPORT_MODEL_NAME_KEY = "report_model_name";
+const QString SETTINGS_FEEDBACK_MODEL_NAME_KEY = "feedback_model_name";
 const QString SETTINGS_SOURCE_LANG_KEY = "sourceLang";
 const QString SETTINGS_TARGET_LANG_KEY = "targetLang";
 const QString SETTINGS_LAST_INPUT_KEY = "lastInputText";
 const QString SETTINGS_TRANSLATION_PROMPT_KEY = "translation_prompt";
 const QString SETTINGS_REPORT_PROMPT_KEY = "report_prompt";
+const QString SETTINGS_FEEDBACK_PROMPT_KEY = "feedback_prompt";
 const QString SETTINGS_MESSAGE_HISTORY_KEY = "message_history";
 const int MAX_HISTORY_SIZE = 5;
 
 // Default prompts
 const QString DEFAULT_TRANSLATION_PROMPT = "You are an expert %sourceLang to %targetLang translator. Translate this text making sure to match the tone and style of the original.";
 const QString DEFAULT_REPORT_PROMPT = "You are an expert %sourceLang teacher. Find the top 5 grammatical mistakes in this %sourceLang text and correct them. Format each mistake as:\n\nORIGINAL: [mistake]\nCORRECTED: [correction]\nEXPLANATION: [brief English explanation]\n\nSeparate entries with two empty lines. If fewer than 5 grammatical errors exist, include important spelling mistakes.";
+const QString DEFAULT_FEEDBACK_PROMPT = "You are an expert %sourceLang teacher. Provide feedback on the syntax, grammar, and fluency of this %sourceLang text. Be constructive and specific. Format your response as:\n\nSYNTAX: [feedback on sentence structure]\nGRAMMAR: [feedback on grammatical correctness]\nFLUENCY: [feedback on naturalness and flow]\n\nKeep each section concise but helpful.";
 
 SettingsManager::SettingsManager(QObject *parent)
     : QObject(parent), settings(parent)
@@ -30,6 +33,12 @@ QString SettingsManager::reportModelName() const {
 }
 void SettingsManager::setReportModelName(const QString &name) {
     settings.setValue(SETTINGS_REPORT_MODEL_NAME_KEY, name);
+}
+QString SettingsManager::feedbackModelName() const {
+    return settings.value(SETTINGS_FEEDBACK_MODEL_NAME_KEY, "gpt-4o-mini").toString();
+}
+void SettingsManager::setFeedbackModelName(const QString &name) {
+    settings.setValue(SETTINGS_FEEDBACK_MODEL_NAME_KEY, name);
 }
 QString SettingsManager::sourceLang() const {
     return settings.value(SETTINGS_SOURCE_LANG_KEY, "Danish").toString();
@@ -64,12 +73,23 @@ void SettingsManager::setReportPrompt(const QString &prompt) {
     settings.setValue(SETTINGS_REPORT_PROMPT_KEY, prompt);
 }
 
+QString SettingsManager::feedbackPrompt() const {
+    return settings.value(SETTINGS_FEEDBACK_PROMPT_KEY, getDefaultFeedbackPrompt()).toString();
+}
+void SettingsManager::setFeedbackPrompt(const QString &prompt) {
+    settings.setValue(SETTINGS_FEEDBACK_PROMPT_KEY, prompt);
+}
+
 QString SettingsManager::getDefaultTranslationPrompt() const {
     return DEFAULT_TRANSLATION_PROMPT;
 }
 
 QString SettingsManager::getDefaultReportPrompt() const {
     return DEFAULT_REPORT_PROMPT;
+}
+
+QString SettingsManager::getDefaultFeedbackPrompt() const {
+    return DEFAULT_FEEDBACK_PROMPT;
 }
 
 QStringList SettingsManager::getMessageHistory() const {

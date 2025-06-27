@@ -75,6 +75,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QCheckBox" name="quickFeedbackCheckBox">
+        <property name="text">
+         <string>Quick feedback</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
@@ -124,6 +131,7 @@
      </property>
      <addaction name="actionEditTranslationModel"/>
      <addaction name="actionEditReportsModel"/>
+     <addaction name="actionEditFeedbackModel"/>
     </widget>
     <widget class="QMenu" name="menuEdit_prompts">
      <property name="title">
@@ -131,6 +139,7 @@
      </property>
      <addaction name="actionEditTranslationPrompt"/>
      <addaction name="actionEditReportPrompt"/>
+     <addaction name="actionEditFeedbackPrompt"/>
     </widget>
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="separator"/>
@@ -186,6 +195,11 @@
     <string>Edit reports model</string>
    </property>
   </action>
+  <action name="actionEditFeedbackModel">
+   <property name="text">
+    <string>Edit feedback model</string>
+   </property>
+  </action>
   <action name="actionTest1">
    <property name="text">
     <string>Test1</string>
@@ -214,6 +228,11 @@
   <action name="actionEditReportPrompt">
    <property name="text">
     <string>Edit report prompt</string>
+   </property>
+  </action>
+  <action name="actionEditFeedbackPrompt">
+   <property name="text">
+    <string>Edit quick feedback prompt</string>
    </property>
   </action>
  </widget>

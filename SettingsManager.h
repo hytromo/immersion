@@ -14,6 +14,8 @@ public:
     void setTranslationModelName(const QString &name);
     QString reportModelName() const;
     void setReportModelName(const QString &name);
+    QString feedbackModelName() const;
+    void setFeedbackModelName(const QString &name);
     QString sourceLang() const;
     void setSourceLang(const QString &lang);
     QString targetLang() const;
@@ -24,8 +26,11 @@ public:
     void setTranslationPrompt(const QString &prompt);
     QString reportPrompt() const;
     void setReportPrompt(const QString &prompt);
+    QString feedbackPrompt() const;
+    void setFeedbackPrompt(const QString &prompt);
     QString getDefaultTranslationPrompt() const;
     QString getDefaultReportPrompt() const;
+    QString getDefaultFeedbackPrompt() const;
     QStringList getMessageHistory() const;
     void addMessageToHistory(const QString &message);
     void sync();

@@ -5,6 +5,7 @@
 #include "AppDataManager.h"
 #include "SettingsManager.h"
 #include "progressdialog.h"
+#include "FeedbackDialog.h"
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -63,6 +64,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionEditReportsModel, SIGNAL(triggered()), this, SLOT(actionEditReportsModel()));
     connect(ui->actionEditTranslationPrompt, SIGNAL(triggered()), this, SLOT(actionEditTranslationPrompt()));
     connect(ui->actionEditReportPrompt, SIGNAL(triggered()), this, SLOT(actionEditReportPrompt()));
+    connect(ui->actionEditFeedbackPrompt, SIGNAL(triggered()), this, SLOT(actionEditFeedbackPrompt()));
+    connect(ui->actionEditFeedbackModel, SIGNAL(triggered()), this, SLOT(actionEditFeedbackModel()));
     
     setupHistoryMenu();
     setupGenerateReportMenu();
@@ -183,6 +186,7 @@ void MainWindow::on_goButton_clicked()
     auto inputText = ui->inputText->toPlainText();
     auto sourceLang = ui->sourceLang->text();
     auto targetLang = ui->targetLang->text();
+    bool quickFeedback = ui->quickFeedbackCheckBox->isChecked();
     
     // Add message to history
     addMessageToHistory(inputText);
@@ -191,14 +195,44 @@ void MainWindow::on_goButton_clicked()
     openaiCommunicator->setModelName(settingsManager->translationModelName());
     openaiCommunicator->setPromptWithTemplate(settingsManager->translationPrompt(), sourceLang, targetLang, inputText);
     openaiCommunicator->sendRequest();
+    
     connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &translation) {
-        ui->goButton->setEnabled(true);
         auto clipboard = QGuiApplication::clipboard();
         clipboard->setText(translation);
         appDataManager->writeTranslationLog(ui->inputText->toPlainText());
-        this->close();
+        
+        // If quick feedback is enabled, request feedback
+        if (quickFeedback) {
+            auto feedbackCommunicator = new OpenAICommunicator(openaiApiKey, this);
+            feedbackCommunicator->setModelName(settingsManager->feedbackModelName());
+            
+            QString feedbackPromptTemplate = settingsManager->feedbackPrompt();
+            QString feedbackPrompt = feedbackPromptTemplate.replace("%sourceLang", sourceLang);
+            feedbackCommunicator->setPromptRaw(feedbackPrompt + "\n\n" + inputText);
+            feedbackCommunicator->sendRequest();
+            
+            connect(feedbackCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &feedback) {
+                ui->goButton->setEnabled(true);
+                FeedbackDialog dialog(feedback, this);
+                dialog.exec();
+                this->close();
+                feedbackCommunicator->deleteLater();
+            });
+            
+            connect(feedbackCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
+                ui->goButton->setEnabled(true);
+                QMessageBox::warning(this, "Feedback Error", "Failed to get feedback: " + errorString);
+                this->close();
+                feedbackCommunicator->deleteLater();
+            });
+        } else {
+            ui->goButton->setEnabled(true);
+            this->close();
+        }
+        
         openaiCommunicator->deleteLater();
     });
+    
     connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
         ui->goButton->setEnabled(true);
         QMessageBox::warning(this, "Network Error", errorString);
@@ -266,6 +300,32 @@ void MainWindow::actionEditReportPrompt()
             settingsManager->setReportPrompt(newPrompt);
             settingsManager->sync();
         }
+    }
+}
+
+void MainWindow::actionEditFeedbackPrompt()
+{
+    PromptEditDialog dialog(PromptType::Feedback, this);
+    dialog.setPrompt(settingsManager->feedbackPrompt());
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QString newPrompt = dialog.getPrompt();
+        if (!newPrompt.isEmpty()) {
+            settingsManager->setFeedbackPrompt(newPrompt);
+            settingsManager->sync();
+        }
+    }
+}
+
+void MainWindow::actionEditFeedbackModel()
+{
+    QString currentModel = settingsManager->feedbackModelName();
+    QString newModel = QInputDialog::getText(this, "Edit Feedback Model", 
+                                           "Enter the feedback model name:", 
+                                           QLineEdit::Normal, currentModel);
+    if (!newModel.isEmpty() && newModel != currentModel) {
+        settingsManager->setFeedbackModelName(newModel);
+        settingsManager->sync();
     }
 }
 
