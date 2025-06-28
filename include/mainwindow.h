@@ -82,22 +82,35 @@ private:
 
     // Constants
     static const QString OPENAI_API_KEY_KEYCHAIN_KEY;
-    static const int MAX_HISTORY_SIZE = 5;
+    static const int MAX_HISTORY_SIZE;
+    static const int SPELL_CHECK_DELAY_MS;
+    static const int MAX_HISTORY_DISPLAY_LENGTH;
 
+    // Initialization Methods
+    void initializeUI();
+    void setupConnections();
+    void setupSpellChecker();
+    
     // API Key Management
     void retrieveOpenAIApiKey();
     void requestApiKeyPopup();
+    bool validateApiKey();
     
     // UI Setup
     void setupHistoryMenu();
     void setupGenerateReportMenu();
-    void setupSpellChecker();
     void updateSpellCheckerStatusLabel();
     
     // Data Management
     void addMessageToHistory(const QString &message);
     void generateReportForDate(const QString &dateString);
     void saveSettings();
+    
+    // Network Request Helpers
+    void setupReportRequest(OpenAICommunicator *communicator, const QString &fileContent, const QString &dateString);
+    void connectOpenAICommunicator(OpenAICommunicator *communicator, QDialog *progress, 
+                                  std::function<void(const QString&)> successCallback);
+    void requestQuickFeedback(const QString &inputText, const QString &sourceLang);
     
     // Utility Methods
     void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);

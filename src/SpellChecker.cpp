@@ -19,6 +19,13 @@
 #pragma comment(lib, "ole32.lib")
 #endif
 
+// Constants
+namespace {
+    const int SPELL_CHECK_DELAY_MS = 500;
+    const int MIN_WORD_LENGTH = 2;
+    const QString SPELL_CHECK_UNDERLINE_COLOR = "red";
+}
+
 // Helper function to convert Qt language codes to Windows language tags
 QString toWindowsLang(const QString &lang) {
 #ifdef Q_OS_WIN
@@ -127,7 +134,7 @@ void SpellChecker::setupVisualSpellChecking()
     
     // Configure the spell check timer (debounced spell checking)
     m_spellCheckTimer->setSingleShot(true);
-    m_spellCheckTimer->setInterval(500); // 500ms delay
+    m_spellCheckTimer->setInterval(SPELL_CHECK_DELAY_MS);
     connect(m_spellCheckTimer, &QTimer::timeout, this, &SpellChecker::performSpellCheck);
 }
 
@@ -168,6 +175,10 @@ void SpellChecker::highlightMisspelledWords()
     }
     
     QString text = m_textEdit->toPlainText();
+    if (text.isEmpty()) {
+        return;
+    }
+    
     QStringList words = extractWords(text);
     
     // Save current cursor position and selection
@@ -216,18 +227,25 @@ void SpellChecker::highlightMisspelledWords()
 QStringList SpellChecker::extractWords(const QString &text) const
 {
     QStringList words;
-    QStringList lines = text.split('\n');
+    QStringList lines = text.split('\n', Qt::SkipEmptyParts);
+    
+    // Regular expression to match words (Unicode letters and numbers)
+    static const QRegularExpression wordRegex(R"(\b[\p{L}\p{M}\p{N}]+\b)");
+    
     for (const QString &line : lines) {
-        QStringList lineWords = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-        for (const QString &word : lineWords) {
-            // Clean and normalize the word (remove punctuation, normalize Unicode, keep all Unicode letters/numbers)
+        QRegularExpressionMatchIterator matchIterator = wordRegex.globalMatch(line);
+        while (matchIterator.hasNext()) {
+            QRegularExpressionMatch match = matchIterator.next();
+            QString word = match.captured();
+            
+            // Clean and normalize the word
             QString cleanWord = word.normalized(QString::NormalizationForm_C);
-            cleanWord.remove(QRegularExpression("[^\\p{L}\\p{M}\\p{N}]"));
-            if (!cleanWord.isEmpty() && cleanWord.length() > 1) {
+            if (cleanWord.length() >= MIN_WORD_LENGTH) {
                 words.append(cleanWord);
             }
         }
     }
+    
     return words;
 }
 

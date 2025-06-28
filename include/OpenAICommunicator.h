@@ -16,6 +16,7 @@ public:
     void setPromptWithTemplate(const QString &promptTemplate, const QString &sourceLang, const QString &targetLang, const QString &inputText);
     void setPromptRaw(const QString &prompt);
     void sendRequest();
+    void cancelRequest();
     QString getPrompt() const;
 
 signals:
@@ -31,6 +32,7 @@ private:
     QString prompt;
     QString inputText;
     QNetworkAccessManager networkManager;
+    QNetworkReply *currentReply = nullptr;
 };
 
 #endif // OPENAICOMMUNICATOR_H 

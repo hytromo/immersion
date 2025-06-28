@@ -33,6 +33,7 @@ public:
     QString getDefaultFeedbackPrompt() const;
     QStringList getMessageHistory() const;
     void addMessageToHistory(const QString &message);
+    void clearMessageHistory();
     void sync();
 
     // Spell checker settings

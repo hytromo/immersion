@@ -11,6 +11,7 @@ namespace {
     const QString API_URL = "https://api.openai.com/v1/chat/completions";
     const QString CONTENT_TYPE = "application/json";
     const QString AUTHORIZATION_PREFIX = "Bearer ";
+    const int REQUEST_TIMEOUT_MS = 30000; // 30 seconds
 }
 
 OpenAICommunicator::OpenAICommunicator(const QString &apiKey_, QObject *parent)
@@ -56,20 +57,33 @@ void OpenAICommunicator::sendRequest() {
         return;
     }
     
+    if (inputText.isEmpty()) {
+        emit errorOccurred("Input text is empty");
+        return;
+    }
+    
     auto json = QJsonObject{};
     json["model"] = modelName.isEmpty() ? DEFAULT_MODEL : modelName;
 
     auto messages = QJsonArray{};
-    auto message = QJsonObject{};
-    message["role"] = "user";
-    message["content"] = prompt;
-    messages.append(message);
-    messages.append(QJsonObject{
-        {"role", "user"},
-        {"content", inputText}
-    });
+    
+    // Add the system prompt if it exists
+    if (!prompt.isEmpty()) {
+        auto systemMessage = QJsonObject{};
+        systemMessage["role"] = "system";
+        systemMessage["content"] = prompt;
+        messages.append(systemMessage);
+    }
+    
+    // Add the user message with input text
+    auto userMessage = QJsonObject{};
+    userMessage["role"] = "user";
+    userMessage["content"] = inputText;
+    messages.append(userMessage);
+    
     json["messages"] = messages;
 
+    // Add response format for structured output
     auto schema = QJsonObject{};
     schema["type"] = "object";
     schema["properties"] = QJsonObject{
@@ -80,18 +94,26 @@ void OpenAICommunicator::sendRequest() {
 
     json["response_format"] = QJsonObject{
         {"type", "json_schema"},
-        {"json_schema", QJsonObject{
-                            {"name", "translation_response"},
-                            {"strict", true},
-                            {"schema", schema}
-                        }}
+        {"json_schema", schema}
     };
 
     auto request = QNetworkRequest(QUrl(API_URL));
     request.setHeader(QNetworkRequest::ContentTypeHeader, CONTENT_TYPE);
     request.setRawHeader("Authorization", (AUTHORIZATION_PREFIX + apiKey).toUtf8());
+    
+    // Set timeout
+    request.setTransferTimeout(REQUEST_TIMEOUT_MS);
 
-    networkManager.post(request, QJsonDocument(json).toJson());
+    auto reply = networkManager.post(request, QJsonDocument(json).toJson());
+    
+    // Store the reply for potential cancellation
+    currentReply = reply;
+}
+
+void OpenAICommunicator::cancelRequest() {
+    if (currentReply && currentReply->isRunning()) {
+        currentReply->abort();
+    }
 }
 
 void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
@@ -100,11 +122,22 @@ void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
         return;
     }
     
+    // Clear the current reply reference
+    if (reply == currentReply) {
+        currentReply = nullptr;
+    }
+    
     auto responseData = reply->readAll();
     qDebug() << "API Response:" << responseData;
     
     if (reply->error() != QNetworkReply::NoError) {
-        emit errorOccurred(reply->errorString() + " " + responseData);
+        QString errorMessage = reply->errorString();
+        if (reply->error() == QNetworkReply::OperationCanceledError) {
+            errorMessage = "Request was cancelled";
+        } else if (reply->error() == QNetworkReply::TimeoutError) {
+            errorMessage = "Request timed out";
+        }
+        emit errorOccurred(errorMessage + " " + responseData);
         reply->deleteLater();
         return;
     }
@@ -117,6 +150,16 @@ void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
     }
     
     auto root = jsonDoc.object();
+    
+    // Check for API errors
+    if (root.contains("error")) {
+        auto errorObj = root["error"].toObject();
+        QString errorMessage = errorObj["message"].toString();
+        emit errorOccurred("API Error: " + errorMessage);
+        reply->deleteLater();
+        return;
+    }
+    
     auto choices = root["choices"].toArray();
     if (choices.isEmpty()) {
         emit errorOccurred("No choices returned from API");
@@ -133,22 +176,21 @@ void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
         return;
     }
     
+    // Try to parse as structured JSON first
     auto contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
-    if (!contentDoc.isObject()) {
-        emit errorOccurred("Failed to parse structured JSON response");
-        reply->deleteLater();
-        return;
+    if (contentDoc.isObject()) {
+        auto result = contentDoc.object();
+        auto translation = result["translation"].toString();
+        
+        if (!translation.isEmpty()) {
+            emit replyReceived(translation);
+            reply->deleteLater();
+            return;
+        }
     }
     
-    auto result = contentDoc.object();
-    auto translation = result["translation"].toString();
-    
-    if (translation.isEmpty()) {
-        emit errorOccurred("Translation field is empty in response");
-        reply->deleteLater();
-        return;
-    }
-    
-    emit replyReceived(translation);
+    // If structured parsing fails, treat the entire content as the translation
+    // This handles cases where the API doesn't follow the structured format
+    emit replyReceived(contentStr);
     reply->deleteLater();
 } 

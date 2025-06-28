@@ -18,12 +18,12 @@ namespace {
     
     // Default Values
     const QString DEFAULT_TRANSLATION_MODEL = "gpt-4o-mini";
-    const QString DEFAULT_REPORT_MODEL = "gpt-4.1";
-    const QString DEFAULT_FEEDBACK_MODEL = "o3";
+    const QString DEFAULT_REPORT_MODEL = "gpt-4o-mini";
+    const QString DEFAULT_FEEDBACK_MODEL = "gpt-4o-mini";
     const QString DEFAULT_SOURCE_LANG = "Danish";
     const QString DEFAULT_TARGET_LANG = "English";
     const QString DEFAULT_SPELLCHECKER_LANG = "en_US";
-    const int MAX_HISTORY_SIZE = 5;
+    const int MAX_HISTORY_SIZE = 10;
     
     // Default Prompts
     const QString DEFAULT_TRANSLATION_PROMPT = "You are an expert %sourceLang to %targetLang translator. Translate this text making sure to match the tone and style of the original.";
@@ -42,7 +42,9 @@ QString SettingsManager::translationModelName() const {
 }
 
 void SettingsManager::setTranslationModelName(const QString &name) {
-    settings.setValue(SETTINGS_TRANSLATION_MODEL_NAME_KEY, name);
+    if (!name.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_TRANSLATION_MODEL_NAME_KEY, name.trimmed());
+    }
 }
 
 QString SettingsManager::reportModelName() const {
@@ -50,7 +52,9 @@ QString SettingsManager::reportModelName() const {
 }
 
 void SettingsManager::setReportModelName(const QString &name) {
-    settings.setValue(SETTINGS_REPORT_MODEL_NAME_KEY, name);
+    if (!name.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_REPORT_MODEL_NAME_KEY, name.trimmed());
+    }
 }
 
 QString SettingsManager::feedbackModelName() const {
@@ -58,7 +62,9 @@ QString SettingsManager::feedbackModelName() const {
 }
 
 void SettingsManager::setFeedbackModelName(const QString &name) {
-    settings.setValue(SETTINGS_FEEDBACK_MODEL_NAME_KEY, name);
+    if (!name.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_FEEDBACK_MODEL_NAME_KEY, name.trimmed());
+    }
 }
 
 // Language Getters and Setters
@@ -67,7 +73,9 @@ QString SettingsManager::sourceLang() const {
 }
 
 void SettingsManager::setSourceLang(const QString &lang) {
-    settings.setValue(SETTINGS_SOURCE_LANG_KEY, lang);
+    if (!lang.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_SOURCE_LANG_KEY, lang.trimmed());
+    }
 }
 
 QString SettingsManager::targetLang() const {
@@ -75,7 +83,9 @@ QString SettingsManager::targetLang() const {
 }
 
 void SettingsManager::setTargetLang(const QString &lang) {
-    settings.setValue(SETTINGS_TARGET_LANG_KEY, lang);
+    if (!lang.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_TARGET_LANG_KEY, lang.trimmed());
+    }
 }
 
 // Input Text Getter and Setter
@@ -93,7 +103,9 @@ QString SettingsManager::translationPrompt() const {
 }
 
 void SettingsManager::setTranslationPrompt(const QString &prompt) {
-    settings.setValue(SETTINGS_TRANSLATION_PROMPT_KEY, prompt);
+    if (!prompt.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_TRANSLATION_PROMPT_KEY, prompt.trimmed());
+    }
 }
 
 QString SettingsManager::reportPrompt() const {
@@ -101,7 +113,9 @@ QString SettingsManager::reportPrompt() const {
 }
 
 void SettingsManager::setReportPrompt(const QString &prompt) {
-    settings.setValue(SETTINGS_REPORT_PROMPT_KEY, prompt);
+    if (!prompt.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_REPORT_PROMPT_KEY, prompt.trimmed());
+    }
 }
 
 QString SettingsManager::feedbackPrompt() const {
@@ -109,7 +123,9 @@ QString SettingsManager::feedbackPrompt() const {
 }
 
 void SettingsManager::setFeedbackPrompt(const QString &prompt) {
-    settings.setValue(SETTINGS_FEEDBACK_PROMPT_KEY, prompt);
+    if (!prompt.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_FEEDBACK_PROMPT_KEY, prompt.trimmed());
+    }
 }
 
 // Default Prompt Getters
@@ -135,17 +151,18 @@ QStringList SettingsManager::getMessageHistory() const {
 }
 
 void SettingsManager::addMessageToHistory(const QString &message) {
-    if (message.trimmed().isEmpty()) {
+    QString trimmedMessage = message.trimmed();
+    if (trimmedMessage.isEmpty()) {
         return; // Don't add empty messages
     }
     
     QStringList history = getMessageHistory();
     
     // Remove the message if it already exists (to avoid duplicates)
-    history.removeAll(message);
+    history.removeAll(trimmedMessage);
     
     // Add the new message at the beginning
-    history.prepend(message);
+    history.prepend(trimmedMessage);
     
     // Keep only the last MAX_HISTORY_SIZE messages
     if (history.size() > MAX_HISTORY_SIZE) {
@@ -153,6 +170,10 @@ void SettingsManager::addMessageToHistory(const QString &message) {
     }
     
     settings.setValue(SETTINGS_MESSAGE_HISTORY_KEY, QVariant(history));
+}
+
+void SettingsManager::clearMessageHistory() {
+    settings.remove(SETTINGS_MESSAGE_HISTORY_KEY);
 }
 
 // Settings Synchronization
@@ -166,7 +187,9 @@ QString SettingsManager::spellCheckerLanguage() const {
 }
 
 void SettingsManager::setSpellCheckerLanguage(const QString &lang) {
-    settings.setValue(SETTINGS_SPELLCHECKER_LANGUAGE_KEY, lang);
+    if (!lang.trimmed().isEmpty()) {
+        settings.setValue(SETTINGS_SPELLCHECKER_LANGUAGE_KEY, lang.trimmed());
+    }
 }
 
 bool SettingsManager::visualSpellCheckingEnabled() const {

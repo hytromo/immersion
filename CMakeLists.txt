@@ -33,8 +33,8 @@ set(PROJECT_SOURCES
     src/mainwindow.cpp
     include/mainwindow.h
     ui/mainwindow.ui
-    include/progressdialog.h
-    src/progressdialog.cpp
+    include/ProgressDialog.h
+    src/ProgressDialog.cpp
     ui/progressdialog.ui
     src/ApiKeyDialog.cpp
     include/ApiKeyDialog.h

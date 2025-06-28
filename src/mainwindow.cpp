@@ -4,7 +4,7 @@
 #include "OpenAICommunicator.h"
 #include "AppDataManager.h"
 #include "SettingsManager.h"
-#include "progressdialog.h"
+#include "ProgressDialog.h"
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
 
@@ -36,6 +36,9 @@
 
 // Constants
 const QString MainWindow::OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
+const int MainWindow::MAX_HISTORY_SIZE = 5;
+const int MainWindow::SPELL_CHECK_DELAY_MS = 500;
+const int MainWindow::MAX_HISTORY_DISPLAY_LENGTH = 50;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -49,54 +52,58 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->inputText->setFocus();
 
-    ui->sourceLang->setText(settingsManager->sourceLang());
-    ui->targetLang->setText(settingsManager->targetLang());
-    ui->inputText->setPlainText(settingsManager->lastInputText());
-    ui->inputText->selectAll();
-
-    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this->ui->inputText);
-    connect(shortcut, &QShortcut::activated, this, &MainWindow::on_goButton_clicked);
-
-    retrieveOpenAIApiKey();
-
-    connect(ui->actionReset_OpenAI_API_key, SIGNAL(triggered()), this, SLOT(actionReset_OpenAI_API_key()));
-    connect(ui->actionOpen_corrections_folder, SIGNAL(triggered()), this, SLOT(actionOpenCorrectionsFolder()));
-    connect(ui->actionHelp, SIGNAL(triggered()), this, SLOT(actionHelp()));
-    connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(actionQuit()));
-    connect(ui->actionEditTranslationModel, SIGNAL(triggered()), this, SLOT(actionEditTranslationModel()));
-    connect(ui->actionEditReportsModel, SIGNAL(triggered()), this, SLOT(actionEditReportsModel()));
-    connect(ui->actionEditTranslationPrompt, SIGNAL(triggered()), this, SLOT(actionEditTranslationPrompt()));
-    connect(ui->actionEditReportPrompt, SIGNAL(triggered()), this, SLOT(actionEditReportPrompt()));
-    connect(ui->actionEditFeedbackPrompt, SIGNAL(triggered()), this, SLOT(actionEditFeedbackPrompt()));
-    connect(ui->actionEditFeedbackModel, SIGNAL(triggered()), this, SLOT(actionEditFeedbackModel()));
-    connect(ui->actionEditSpellCheckerLanguage, SIGNAL(triggered()), this, SLOT(actionEditSpellCheckerLanguage()));
-    connect(ui->actionToggleVisualSpellChecking, SIGNAL(triggered()), this, SLOT(actionToggleVisualSpellChecking()));
-    
-    // Connect to application shutdown signal for graceful shutdown
-    connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveSettings);
-    
+    initializeUI();
+    setupConnections();
     setupHistoryMenu();
     setupGenerateReportMenu();
-    
-    // Load spell checker settings
-    QString savedSpellLang = settingsManager->spellCheckerLanguage();
-    bool savedVisual = settingsManager->visualSpellCheckingEnabled();
-    spellChecker->enableSpellChecking(ui->inputText);
-    spellChecker->enableVisualSpellChecking(savedVisual);
-    spellChecker->setLanguage(savedSpellLang);
-    // Update status label
-    updateSpellCheckerStatusLabel();
-
-    ui->quickFeedbackCheckBox->setChecked(settingsManager->quickFeedbackEnabled());
-    connect(ui->quickFeedbackCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        settingsManager->setQuickFeedbackEnabled(checked);
-        settingsManager->sync();
-    });
+    setupSpellChecker();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::initializeUI()
+{
+    ui->sourceLang->setText(settingsManager->sourceLang());
+    ui->targetLang->setText(settingsManager->targetLang());
+    ui->inputText->setPlainText(settingsManager->lastInputText());
+    ui->inputText->selectAll();
+
+    ui->quickFeedbackCheckBox->setChecked(settingsManager->quickFeedbackEnabled());
+}
+
+void MainWindow::setupConnections()
+{
+    // Keyboard shortcuts
+    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this->ui->inputText);
+    connect(shortcut, &QShortcut::activated, this, &MainWindow::on_goButton_clicked);
+
+    // Menu actions
+    connect(ui->actionReset_OpenAI_API_key, &QAction::triggered, this, &MainWindow::actionReset_OpenAI_API_key);
+    connect(ui->actionOpen_corrections_folder, &QAction::triggered, this, &MainWindow::actionOpenCorrectionsFolder);
+    connect(ui->actionHelp, &QAction::triggered, this, &MainWindow::actionHelp);
+    connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::actionQuit);
+    connect(ui->actionEditTranslationModel, &QAction::triggered, this, &MainWindow::actionEditTranslationModel);
+    connect(ui->actionEditReportsModel, &QAction::triggered, this, &MainWindow::actionEditReportsModel);
+    connect(ui->actionEditTranslationPrompt, &QAction::triggered, this, &MainWindow::actionEditTranslationPrompt);
+    connect(ui->actionEditReportPrompt, &QAction::triggered, this, &MainWindow::actionEditReportPrompt);
+    connect(ui->actionEditFeedbackPrompt, &QAction::triggered, this, &MainWindow::actionEditFeedbackPrompt);
+    connect(ui->actionEditFeedbackModel, &QAction::triggered, this, &MainWindow::actionEditFeedbackModel);
+    connect(ui->actionEditSpellCheckerLanguage, &QAction::triggered, this, &MainWindow::actionEditSpellCheckerLanguage);
+    connect(ui->actionToggleVisualSpellChecking, &QAction::triggered, this, &MainWindow::actionToggleVisualSpellChecking);
+    
+    // Application shutdown
+    connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveSettings);
+    
+    // Quick feedback checkbox
+    connect(ui->quickFeedbackCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        settingsManager->setQuickFeedbackEnabled(checked);
+        settingsManager->sync();
+    });
+
+    retrieveOpenAIApiKey();
 }
 
 void MainWindow::saveSettings()
@@ -111,11 +118,11 @@ void MainWindow::saveSettings()
 void MainWindow::retrieveOpenAIApiKey()
 {
     connect(keychain, &KeychainManager::keyRestored, this,
-            [=](const QString &key, const QString &value) {
+            [this](const QString &key, const QString &value) {
                 openaiApiKey = value;
             });
     connect(keychain, &KeychainManager::error, this,
-            [=](const QString &errorMessage) {
+            [this](const QString &errorMessage) {
                 requestApiKeyPopup();
             });
     keychain->readKey(OPENAI_API_KEY_KEYCHAIN_KEY);
@@ -157,18 +164,18 @@ void MainWindow::cleanupProgressAndCommunicator(QDialog *progress, OpenAICommuni
         progress->close();
         progress->deleteLater();
     }
-    if (communicator)
+    if (communicator) {
         communicator->deleteLater();
-
+    }
     this->setEnabled(true);
 }
 
 void MainWindow::actionGenerateMistakesReport()
 {
-    if (openaiApiKey.isEmpty()) {
-        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+    if (!validateApiKey()) {
         return;
     }
+    
     this->setEnabled(false);
     auto progress = new ProgressDialog(this);
     auto openaiCommunicator = new OpenAICommunicator(openaiApiKey, this);
@@ -180,20 +187,47 @@ void MainWindow::actionGenerateMistakesReport()
         QMessageBox::warning(this, "Error", "Could not open today's file.");
         return;
     }
+    
+    setupReportRequest(openaiCommunicator, fileContent, "");
+    
+    connectOpenAICommunicator(openaiCommunicator, progress, [this](const QString &report) {
+        appDataManager->writeMistakesReport(report);
+    });
+}
+
+bool MainWindow::validateApiKey()
+{
+    if (openaiApiKey.isEmpty()) {
+        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+        return false;
+    }
+    return true;
+}
+
+void MainWindow::setupReportRequest(OpenAICommunicator *communicator, const QString &fileContent, const QString &dateString)
+{
     auto sourceLang = ui->sourceLang->text();
     QString promptTemplate = settingsManager->reportPrompt();
     QString prompt = promptTemplate.replace("%sourceLang", sourceLang);
-    openaiCommunicator->setModelName(settingsManager->reportModelName());
-    openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
-    openaiCommunicator->sendRequest();
-    connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &report) mutable {
-        cleanupProgressAndCommunicator(progress, openaiCommunicator);
-        appDataManager->writeMistakesReport(report);
-    });
-    connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) mutable {
-        cleanupProgressAndCommunicator(progress, openaiCommunicator);
-        QMessageBox::warning(this, "Network Error", errorString);
-    });
+    communicator->setModelName(settingsManager->reportModelName());
+    communicator->setPromptRaw(prompt + "\n\n" + fileContent);
+    communicator->sendRequest();
+}
+
+void MainWindow::connectOpenAICommunicator(OpenAICommunicator *communicator, QDialog *progress, 
+                                         std::function<void(const QString&)> successCallback)
+{
+    connect(communicator, &OpenAICommunicator::replyReceived, this, 
+            [=](const QString &response) mutable {
+                cleanupProgressAndCommunicator(progress, communicator);
+                successCallback(response);
+            });
+    
+    connect(communicator, &OpenAICommunicator::errorOccurred, this, 
+            [=](const QString &errorString) mutable {
+                cleanupProgressAndCommunicator(progress, communicator);
+                QMessageBox::warning(this, "Network Error", errorString);
+            });
 }
 
 void MainWindow::on_goButton_clicked()
@@ -201,10 +235,11 @@ void MainWindow::on_goButton_clicked()
     if (!ui->goButton->isEnabled()) {
         return;
     }
-    if (openaiApiKey.isEmpty()) {
-        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+    
+    if (!validateApiKey()) {
         return;
     }
+    
     ui->goButton->setDisabled(true);
     auto inputText = ui->inputText->toPlainText();
     auto sourceLang = ui->sourceLang->text();
@@ -226,28 +261,7 @@ void MainWindow::on_goButton_clicked()
         
         // If quick feedback is enabled, request feedback
         if (quickFeedback) {
-            auto feedbackCommunicator = new OpenAICommunicator(openaiApiKey, this);
-            feedbackCommunicator->setModelName(settingsManager->feedbackModelName());
-            
-            QString feedbackPromptTemplate = settingsManager->feedbackPrompt();
-            QString feedbackPrompt = feedbackPromptTemplate.replace("%sourceLang", sourceLang);
-            feedbackCommunicator->setPromptRaw(feedbackPrompt + "\n\n" + inputText);
-            feedbackCommunicator->sendRequest();
-            
-            connect(feedbackCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &feedback) {
-                ui->goButton->setEnabled(true);
-                FeedbackDialog dialog(feedback, this);
-                dialog.exec();
-                this->hide();
-                feedbackCommunicator->deleteLater();
-            });
-            
-            connect(feedbackCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
-                ui->goButton->setEnabled(true);
-                QMessageBox::warning(this, "Feedback Error", "Failed to get feedback: " + errorString);
-                this->hide();
-                feedbackCommunicator->deleteLater();
-            });
+            requestQuickFeedback(inputText, sourceLang);
         } else {
             ui->goButton->setEnabled(true);
             this->hide();
@@ -260,6 +274,32 @@ void MainWindow::on_goButton_clicked()
         ui->goButton->setEnabled(true);
         QMessageBox::warning(this, "Network Error", errorString);
         openaiCommunicator->deleteLater();
+    });
+}
+
+void MainWindow::requestQuickFeedback(const QString &inputText, const QString &sourceLang)
+{
+    auto feedbackCommunicator = new OpenAICommunicator(openaiApiKey, this);
+    feedbackCommunicator->setModelName(settingsManager->feedbackModelName());
+    
+    QString feedbackPromptTemplate = settingsManager->feedbackPrompt();
+    QString feedbackPrompt = feedbackPromptTemplate.replace("%sourceLang", sourceLang);
+    feedbackCommunicator->setPromptRaw(feedbackPrompt + "\n\n" + inputText);
+    feedbackCommunicator->sendRequest();
+    
+    connect(feedbackCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &feedback) {
+        ui->goButton->setEnabled(true);
+        FeedbackDialog dialog(feedback, this);
+        dialog.exec();
+        this->hide();
+        feedbackCommunicator->deleteLater();
+    });
+    
+    connect(feedbackCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
+        ui->goButton->setEnabled(true);
+        QMessageBox::warning(this, "Feedback Error", "Failed to get feedback: " + errorString);
+        this->hide();
+        feedbackCommunicator->deleteLater();
     });
 }
 
@@ -380,7 +420,8 @@ void MainWindow::setupHistoryMenu()
         for (int i = 0; i < history.size(); ++i) {
             QString message = history[i];
             // Truncate long messages for display
-            QString displayText = message.length() > 50 ? message.left(47) + "..." : message;
+            QString displayText = message.length() > MAX_HISTORY_DISPLAY_LENGTH ? 
+                                 message.left(MAX_HISTORY_DISPLAY_LENGTH - 3) + "..." : message;
             
             QAction *historyAction = new QAction(displayText, this);
             historyAction->setData(message); // Store the full message
@@ -502,8 +543,7 @@ QString MainWindow::formatDateForDisplay(const QDate &date) const
 
 void MainWindow::generateReportForDate(const QString &dateString)
 {
-    if (openaiApiKey.isEmpty()) {
-        QMessageBox::warning(this, "Error", "OpenAI API key is missing.");
+    if (!validateApiKey()) {
         return;
     }
     
@@ -519,21 +559,10 @@ void MainWindow::generateReportForDate(const QString &dateString)
         return;
     }
     
-    auto sourceLang = ui->sourceLang->text();
-    QString promptTemplate = settingsManager->reportPrompt();
-    QString prompt = promptTemplate.replace("%sourceLang", sourceLang);
-    openaiCommunicator->setModelName(settingsManager->reportModelName());
-    openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
-    openaiCommunicator->sendRequest();
+    setupReportRequest(openaiCommunicator, fileContent, dateString);
     
-    connect(openaiCommunicator, &OpenAICommunicator::replyReceived, this, [=](const QString &report) mutable {
-        cleanupProgressAndCommunicator(progress, openaiCommunicator);
+    connectOpenAICommunicator(openaiCommunicator, progress, [this, dateString](const QString &report) {
         appDataManager->writeMistakesReport(report, dateString);
-    });
-    
-    connect(openaiCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) mutable {
-        cleanupProgressAndCommunicator(progress, openaiCommunicator);
-        QMessageBox::warning(this, "Network Error", errorString);
     });
 }
 
@@ -543,22 +572,26 @@ void MainWindow::setupSpellChecker()
         // Enable spell checking for the input text area
         spellChecker->enableSpellChecking(ui->inputText);
         
+        // Load saved settings
+        QString savedSpellLang = settingsManager->spellCheckerLanguage();
+        bool savedVisual = settingsManager->visualSpellCheckingEnabled();
+        
         // Enable visual spell checking (red underlines)
-        spellChecker->enableVisualSpellChecking(true);
+        spellChecker->enableVisualSpellChecking(savedVisual);
         
         // Set the language based on the source language
         QString sourceLang = ui->sourceLang->text();
         QString spellCheckLang = mapLanguageToSpellCheckLanguage(sourceLang);
-        spellChecker->setLanguage(spellCheckLang);
+        spellChecker->setLanguage(savedSpellLang.isEmpty() ? spellCheckLang : savedSpellLang);
         
         // Update status label
         updateSpellCheckerStatusLabel();
         
-        settingsManager->setSpellCheckerLanguage(spellCheckLang);
+        settingsManager->setSpellCheckerLanguage(spellChecker->getCurrentLanguage());
         settingsManager->setVisualSpellCheckingEnabled(spellChecker->isVisualSpellCheckingEnabled());
         settingsManager->sync();
         
-        qDebug() << "Spell checking enabled for language:" << spellCheckLang;
+        qDebug() << "Spell checking enabled for language:" << spellChecker->getCurrentLanguage();
     } else {
         // Update status label
         ui->spellCheckerStatus->setText("Spell checker: Not available");
@@ -570,27 +603,28 @@ void MainWindow::setupSpellChecker()
 
 QString MainWindow::mapLanguageToSpellCheckLanguage(const QString &language) const
 {
-    // Map common language names to macOS spell checker language codes
-    QMap<QString, QString> languageMap;
-    languageMap["English"] = "en_US";
-    languageMap["Danish"] = "da_DK";
-    languageMap["German"] = "de_DE";
-    languageMap["French"] = "fr_FR";
-    languageMap["Spanish"] = "es_ES";
-    languageMap["Italian"] = "it_IT";
-    languageMap["Portuguese"] = "pt_PT";
-    languageMap["Dutch"] = "nl_NL";
-    languageMap["Swedish"] = "sv_SE";
-    languageMap["Norwegian"] = "no_NO";
-    languageMap["Finnish"] = "fi_FI";
-    languageMap["Russian"] = "ru_RU";
-    languageMap["Polish"] = "pl_PL";
-    languageMap["Czech"] = "cs_CZ";
-    languageMap["Hungarian"] = "hu_HU";
-    languageMap["Turkish"] = "tr_TR";
-    languageMap["Japanese"] = "ja_JP";
-    languageMap["Korean"] = "ko_KR";
-    languageMap["Chinese"] = "zh_CN";
+    // Map common language names to spell checker language codes
+    static const QMap<QString, QString> languageMap = {
+        {"English", "en_US"},
+        {"Danish", "da_DK"},
+        {"German", "de_DE"},
+        {"French", "fr_FR"},
+        {"Spanish", "es_ES"},
+        {"Italian", "it_IT"},
+        {"Portuguese", "pt_PT"},
+        {"Dutch", "nl_NL"},
+        {"Swedish", "sv_SE"},
+        {"Norwegian", "no_NO"},
+        {"Finnish", "fi_FI"},
+        {"Russian", "ru_RU"},
+        {"Polish", "pl_PL"},
+        {"Czech", "cs_CZ"},
+        {"Hungarian", "hu_HU"},
+        {"Turkish", "tr_TR"},
+        {"Japanese", "ja_JP"},
+        {"Korean", "ko_KR"},
+        {"Chinese", "zh_CN"}
+    };
     
     return languageMap.value(language, "en_US"); // Default to English if not found
 }
