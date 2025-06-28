@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "keychainclass.h"
+#include "KeychainManager.h"
 #include "OpenAICommunicator.h"
 #include "AppDataManager.h"
 #include "SettingsManager.h"
@@ -61,7 +61,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    KeyChainClass *keychain;
+    KeychainManager *keychain;
     AppDataManager *appDataManager;
     SettingsManager *settingsManager;
     QString openaiApiKey;

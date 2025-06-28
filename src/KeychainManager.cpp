@@ -1,8 +1,8 @@
 #include <QDebug>
 
-#include "keychainclass.h"
+#include "KeychainManager.h"
 
-KeyChainClass::KeyChainClass(QObject *parent)
+KeychainManager::KeychainManager(QObject *parent)
     : QObject(parent),
       m_readCredentialJob(QLatin1String("hytromo.immersion")),
       m_writeCredentialJob(QLatin1String("hytromo.immersion")),
@@ -13,7 +13,7 @@ KeyChainClass::KeyChainClass(QObject *parent)
     m_deleteCredentialJob.setAutoDelete(false);
 }
 
-void KeyChainClass::readKey(const QString &key)
+void KeychainManager::readKey(const QString &key)
 {
     m_readCredentialJob.setKey(key);
 
@@ -29,7 +29,7 @@ void KeyChainClass::readKey(const QString &key)
     m_readCredentialJob.start();
 }
 
-void KeyChainClass::writeKey(const QString &key, const QString &value)
+void KeychainManager::writeKey(const QString &key, const QString &value)
 {
     m_writeCredentialJob.setKey(key);
 
@@ -47,7 +47,7 @@ void KeyChainClass::writeKey(const QString &key, const QString &value)
     m_writeCredentialJob.start();
 }
 
-void KeyChainClass::deleteKey(const QString &key)
+void KeychainManager::deleteKey(const QString &key)
 {
     m_deleteCredentialJob.setKey(key);
 

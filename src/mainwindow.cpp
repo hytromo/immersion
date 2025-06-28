@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
-#include "keychainclass.h"
+#include "KeychainManager.h"
 #include "OpenAICommunicator.h"
 #include "AppDataManager.h"
 #include "SettingsManager.h"
@@ -39,7 +39,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , keychain(new KeyChainClass(this))
+    , keychain(new KeychainManager(this))
     , appDataManager(new AppDataManager(this))
     , settingsManager(new SettingsManager(this))
     , openaiApiKey("")
@@ -92,11 +92,11 @@ void MainWindow::saveSettings()
 void MainWindow::retrieveOpenAIApiKey()
 {
     static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
-    connect(keychain, &KeyChainClass::keyRestored, this,
+    connect(keychain, &KeychainManager::keyRestored, this,
             [=](const QString &key, const QString &value) {
                 openaiApiKey = value;
             });
-    connect(keychain, &KeyChainClass::error, this,
+    connect(keychain, &KeychainManager::error, this,
             [=](const QString &errorMessage) {
                 requestApiKeyPopup();
             });

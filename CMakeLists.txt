@@ -27,8 +27,8 @@ set(PROJECT_SOURCES
     include/OpenAICommunicator.h
     src/SettingsManager.cpp
     include/SettingsManager.h
-    src/keychainclass.cpp
-    include/keychainclass.h
+    src/KeychainManager.cpp
+    include/KeychainManager.h
     src/main.cpp
     src/mainwindow.cpp
     include/mainwindow.h
