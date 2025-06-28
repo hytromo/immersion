@@ -536,6 +536,7 @@ QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
     qDebug() << "Windows suggestions for" << normWord << ":" << suggestions;
     return suggestions;
 #else
+    Q_UNUSED(word);
     return QStringList();
 #endif
 }
@@ -574,6 +575,7 @@ bool SpellChecker::isWordMisspelled(const QString &word) const
         return false;
     }
 #else
+    Q_UNUSED(word);
     return false;
 #endif
 }
@@ -595,6 +597,8 @@ void SpellChecker::addWordToDictionary(const QString &word)
 #ifdef Q_OS_WIN
     if (!m_spellChecker) return;
     static_cast<ISpellChecker*>(m_spellChecker)->Add(_bstr_t(word.toStdWString().c_str()));
+#else
+    Q_UNUSED(word);
 #endif
 }
 
@@ -602,6 +606,8 @@ void SpellChecker::ignoreWordInDocument(const QString &word)
 {
 #ifdef Q_OS_WIN
     // Windows spell checker does not have a per-document ignore, so we do nothing or could implement a local ignore list.
+    Q_UNUSED(word);
+#else
     Q_UNUSED(word);
 #endif
 }

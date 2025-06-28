@@ -69,7 +69,6 @@ private:
     // Native spell checker interfaces
 #ifdef Q_OS_MACOS
     void *m_spellChecker; // NSSpellChecker*
-    void *m_textChecker;  // NSTextChecker*
 #endif
 #ifdef Q_OS_WIN
     void *m_spellCheckerFactory; // ISpellCheckerFactory*
