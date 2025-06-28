@@ -48,10 +48,9 @@ int main(int argc, char *argv[])
         mainWindow.setFocus();
         
         // Ensure it's visible on the current screen
-        QScreen *currentScreen = QGuiApplication::primaryScreen();
-        if (currentScreen) {
-            QRect screenGeometry = currentScreen->geometry();
-            QRect windowGeometry = mainWindow.geometry();
+        if (const QScreen *currentScreen = QGuiApplication::primaryScreen()) {
+            const QRect screenGeometry = currentScreen->geometry();
+            const QRect windowGeometry = mainWindow.geometry();
             
             // If window is outside visible area, center it
             if (!screenGeometry.intersects(windowGeometry)) {

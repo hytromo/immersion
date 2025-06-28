@@ -9,32 +9,20 @@
 #include "PromptEditDialog.h"
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
+#include "NetworkRequestManager.h"
 
 #include <QMainWindow>
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
 #include <QSettings>
-#include <QProgressDialog>
 #include <QDialog>
-#include <QLabel>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QDesktopServices>
-#include <QUrl>
 #include <QDate>
 #include <QLocale>
+#include <functional>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
-
-class OpenAICommunicator;
-class AppDataManager;
-class SettingsManager;
 
 class MainWindow : public QMainWindow
 {
@@ -76,6 +64,7 @@ private:
     AppDataManager *appDataManager;
     SettingsManager *settingsManager;
     SpellChecker *spellChecker;
+    NetworkRequestManager *networkManager;
     
     // State
     QString openaiApiKey;
@@ -107,14 +96,9 @@ private:
     void saveSettings();
     
     // Network Request Helpers
-    void setupReportRequest(OpenAICommunicator *communicator, const QString &fileContent, const QString &dateString);
-    void connectOpenAICommunicator(OpenAICommunicator *communicator, QDialog *progress, 
-                                  std::function<void(const QString&)> successCallback);
     void requestQuickFeedback(const QString &inputText, const QString &sourceLang);
     
     // Utility Methods
-    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
-    QString formatDateForDisplay(const QDate &date) const;
     QString mapLanguageToSpellCheckLanguage(const QString &language) const;
     
     // Helper Methods for Settings Actions

@@ -62,6 +62,9 @@ void OpenAICommunicator::sendRequest() {
         return;
     }
     
+    // Cancel any existing request
+    cancelRequest();
+    
     auto json = QJsonObject{};
     json["model"] = modelName.isEmpty() ? DEFAULT_MODEL : modelName;
 
@@ -104,16 +107,32 @@ void OpenAICommunicator::sendRequest() {
     // Set timeout
     request.setTransferTimeout(REQUEST_TIMEOUT_MS);
 
-    auto reply = networkManager.post(request, QJsonDocument(json).toJson());
+    currentReply = networkManager.post(request, QJsonDocument(json).toJson());
     
-    // Store the reply for potential cancellation
-    currentReply = reply;
+    if (!currentReply) {
+        emit errorOccurred("Failed to create network request");
+        return;
+    }
+    
+    // Connect to the reply's signals for better error handling
+    connect(currentReply, &QNetworkReply::errorOccurred, this, [this](QNetworkReply::NetworkError error) {
+        if (currentReply) {
+            QString errorMessage = currentReply->errorString();
+            if (error == QNetworkReply::OperationCanceledError) {
+                errorMessage = "Request was cancelled";
+            } else if (error == QNetworkReply::TimeoutError) {
+                errorMessage = "Request timed out";
+            }
+            emit errorOccurred(errorMessage);
+        }
+    });
 }
 
 void OpenAICommunicator::cancelRequest() {
     if (currentReply && currentReply->isRunning()) {
         currentReply->abort();
     }
+    currentReply = nullptr;
 }
 
 void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
@@ -127,7 +146,12 @@ void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
         currentReply = nullptr;
     }
     
-    auto responseData = reply->readAll();
+    // Ensure reply is deleted when we exit this function
+    const auto replyDeleter = qScopeGuard([reply]() {
+        reply->deleteLater();
+    });
+    
+    const auto responseData = reply->readAll();
     qDebug() << "API Response:" << responseData;
     
     if (reply->error() != QNetworkReply::NoError) {
@@ -138,53 +162,47 @@ void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
             errorMessage = "Request timed out";
         }
         emit errorOccurred(errorMessage + " " + responseData);
-        reply->deleteLater();
         return;
     }
     
-    auto jsonDoc = QJsonDocument::fromJson(responseData);
+    const auto jsonDoc = QJsonDocument::fromJson(responseData);
     if (!jsonDoc.isObject()) {
         emit errorOccurred("Invalid JSON response");
-        reply->deleteLater();
         return;
     }
     
-    auto root = jsonDoc.object();
+    const auto root = jsonDoc.object();
     
     // Check for API errors
     if (root.contains("error")) {
-        auto errorObj = root["error"].toObject();
-        QString errorMessage = errorObj["message"].toString();
+        const auto errorObj = root["error"].toObject();
+        const QString errorMessage = errorObj["message"].toString();
         emit errorOccurred("API Error: " + errorMessage);
-        reply->deleteLater();
         return;
     }
     
-    auto choices = root["choices"].toArray();
+    const auto choices = root["choices"].toArray();
     if (choices.isEmpty()) {
         emit errorOccurred("No choices returned from API");
-        reply->deleteLater();
         return;
     }
     
-    auto messageObj = choices[0].toObject()["message"].toObject();
-    auto contentStr = messageObj["content"].toString();
+    const auto messageObj = choices[0].toObject()["message"].toObject();
+    const auto contentStr = messageObj["content"].toString();
     
     if (contentStr.isEmpty()) {
         emit errorOccurred("Empty content in API response");
-        reply->deleteLater();
         return;
     }
     
     // Try to parse as structured JSON first
-    auto contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
+    const auto contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
     if (contentDoc.isObject()) {
-        auto result = contentDoc.object();
-        auto translation = result["translation"].toString();
+        const auto result = contentDoc.object();
+        const auto translation = result["translation"].toString();
         
         if (!translation.isEmpty()) {
             emit replyReceived(translation);
-            reply->deleteLater();
             return;
         }
     }
@@ -192,5 +210,4 @@ void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
     // If structured parsing fails, treat the entire content as the translation
     // This handles cases where the API doesn't follow the structured format
     emit replyReceived(contentStr);
-    reply->deleteLater();
 } 

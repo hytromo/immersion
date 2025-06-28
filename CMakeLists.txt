@@ -46,6 +46,10 @@ set(PROJECT_SOURCES
     include/SingleInstance.h
     src/SpellChecker.cpp
     include/SpellChecker.h
+    src/NetworkRequestManager.cpp
+    include/NetworkRequestManager.h
+    src/StringUtils.cpp
+    include/StringUtils.h
 )
 
 add_subdirectory("external/qtkeychain" qtkeychain_build)
