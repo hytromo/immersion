@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QApplication app(argc, argv);
 
     QCoreApplication::setOrganizationName("hytromo");
     QCoreApplication::setOrganizationDomain("hytromo.github.io");
@@ -25,29 +25,29 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    MainWindow w;
-    w.show();
+    MainWindow mainWindow;
+    mainWindow.show();
     
     // Start listening for messages from other instances
     singleInstance.startListening();
     
     // Connect the signal to bring window to front
-    QObject::connect(&singleInstance, &SingleInstance::bringToFrontRequested, [&w]() {
-        w.setWindowState(Qt::WindowNoState);
-        w.show();
-        w.raise();
-        w.activateWindow();
-        w.setFocus();
+    QObject::connect(&singleInstance, &SingleInstance::bringToFrontRequested, [&mainWindow]() {
+        mainWindow.setWindowState(Qt::WindowNoState);
+        mainWindow.show();
+        mainWindow.raise();
+        mainWindow.activateWindow();
+        mainWindow.setFocus();
         
         // Ensure it's visible on the current screen
         QScreen *currentScreen = QGuiApplication::primaryScreen();
         if (currentScreen) {
             QRect screenGeometry = currentScreen->geometry();
-            QRect windowGeometry = w.geometry();
+            QRect windowGeometry = mainWindow.geometry();
             
             // If window is outside visible area, center it
             if (!screenGeometry.intersects(windowGeometry)) {
-                w.move(
+                mainWindow.move(
                     screenGeometry.center().x() - windowGeometry.width() / 2,
                     screenGeometry.center().y() - windowGeometry.height() / 2
                 );
@@ -55,5 +55,5 @@ int main(int argc, char *argv[])
         }
     });
     
-    return a.exec();
+    return app.exec();
 }

@@ -16,7 +16,7 @@ class SpellChecker : public QObject
 
 public:
     explicit SpellChecker(QObject *parent = nullptr);
-    ~SpellChecker();
+    ~SpellChecker() override;
 
     // Enable spell checking for a text edit widget
     void enableSpellChecking(QPlainTextEdit *textEdit);
@@ -49,11 +49,8 @@ private slots:
     void performSpellCheck();
 
 private:
+    // UI Components
     QPlainTextEdit *m_textEdit;
-    QString m_currentLanguage;
-    QString m_selectedWord;
-    QPoint m_contextMenuPos;
-    bool m_visualSpellCheckingEnabled;
     QTimer *m_spellCheckTimer;
     QTextCharFormat m_misspelledFormat;
     
@@ -62,32 +59,44 @@ private:
     QAction *m_addToDictAction;
     QAction *m_ignoreAction;
     
-    // Native macOS spell checker interface
+    // State
+    QString m_currentLanguage;
+    QString m_selectedWord;
+    QPoint m_contextMenuPos;
+    bool m_visualSpellCheckingEnabled;
+    
+    // Native spell checker interfaces
 #ifdef Q_OS_MACOS
     void *m_spellChecker; // NSSpellChecker*
     void *m_textChecker;  // NSTextChecker*
 #endif
-    // Native Windows spell checker interface
 #ifdef Q_OS_WIN
     void *m_spellCheckerFactory; // ISpellCheckerFactory*
     void *m_spellChecker;        // ISpellChecker*
 #endif
     
+    // Setup Methods
     void setupContextMenu();
-    void updateContextMenu();
-    QString getWordAtPosition(const QPoint &pos);
-    QTextCursor getWordCursorAtPosition(const QPoint &pos);
-    void replaceWordWithSuggestion(const QString &replacement);
     void setupVisualSpellChecking();
+    void updateContextMenu();
+    
+    // Text Processing
+    QString getWordAtPosition(const QPoint &pos) const;
+    QTextCursor getWordCursorAtPosition(const QPoint &pos) const;
+    QStringList extractWords(const QString &text) const;
+    
+    // Visual Spell Checking
     void clearSpellCheckFormatting();
     void highlightMisspelledWords();
-    QStringList extractWords(const QString &text);
-
-    // Native spell checker methods (always declared, only defined for platform or as stubs)
+    
+    // Word Operations
+    void replaceWordWithSuggestion(const QString &replacement);
+    
+    // Native spell checker methods (platform-specific implementations)
     void initializeNativeSpellChecker();
     void cleanupNativeSpellChecker();
-    QStringList getSuggestionsForWord(const QString &word);
-    bool isWordMisspelled(const QString &word);
+    QStringList getSuggestionsForWord(const QString &word) const;
+    bool isWordMisspelled(const QString &word) const;
     void addWordToDictionary(const QString &word);
     void ignoreWordInDocument(const QString &word);
 };

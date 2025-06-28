@@ -3,6 +3,15 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QNetworkRequest>
+#include <QDebug>
+
+// Constants
+namespace {
+    const QString DEFAULT_MODEL = "gpt-4o-mini";
+    const QString API_URL = "https://api.openai.com/v1/chat/completions";
+    const QString CONTENT_TYPE = "application/json";
+    const QString AUTHORIZATION_PREFIX = "Bearer ";
+}
 
 OpenAICommunicator::OpenAICommunicator(const QString &apiKey_, QObject *parent)
     : QObject(parent), apiKey(apiKey_)
@@ -37,8 +46,18 @@ QString OpenAICommunicator::getPrompt() const {
 }
 
 void OpenAICommunicator::sendRequest() {
+    if (apiKey.isEmpty()) {
+        emit errorOccurred("API key is empty");
+        return;
+    }
+    
+    if (prompt.isEmpty()) {
+        emit errorOccurred("Prompt is empty");
+        return;
+    }
+    
     auto json = QJsonObject{};
-    json["model"] = modelName.isEmpty() ? "gpt-4o-mini" : modelName;
+    json["model"] = modelName.isEmpty() ? DEFAULT_MODEL : modelName;
 
     auto messages = QJsonArray{};
     auto message = QJsonObject{};
@@ -68,39 +87,68 @@ void OpenAICommunicator::sendRequest() {
                         }}
     };
 
-    auto request = QNetworkRequest(QUrl("https://api.openai.com/v1/chat/completions"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader("Authorization", ("Bearer " + apiKey).toUtf8());
+    auto request = QNetworkRequest(QUrl(API_URL));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, CONTENT_TYPE);
+    request.setRawHeader("Authorization", (AUTHORIZATION_PREFIX + apiKey).toUtf8());
 
     networkManager.post(request, QJsonDocument(json).toJson());
 }
 
 void OpenAICommunicator::handleNetworkReply(QNetworkReply *reply) {
+    if (!reply) {
+        emit errorOccurred("Invalid network reply");
+        return;
+    }
+    
     auto responseData = reply->readAll();
-    qDebug() << responseData;
+    qDebug() << "API Response:" << responseData;
+    
     if (reply->error() != QNetworkReply::NoError) {
         emit errorOccurred(reply->errorString() + " " + responseData);
         reply->deleteLater();
         return;
     }
+    
     auto jsonDoc = QJsonDocument::fromJson(responseData);
+    if (!jsonDoc.isObject()) {
+        emit errorOccurred("Invalid JSON response");
+        reply->deleteLater();
+        return;
+    }
+    
     auto root = jsonDoc.object();
     auto choices = root["choices"].toArray();
     if (choices.isEmpty()) {
-        emit errorOccurred("No choices returned.");
+        emit errorOccurred("No choices returned from API");
         reply->deleteLater();
         return;
     }
+    
     auto messageObj = choices[0].toObject()["message"].toObject();
     auto contentStr = messageObj["content"].toString();
-    auto contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
-    if (!contentDoc.isObject()) {
-        emit errorOccurred("Failed to parse structured JSON.");
+    
+    if (contentStr.isEmpty()) {
+        emit errorOccurred("Empty content in API response");
         reply->deleteLater();
         return;
     }
+    
+    auto contentDoc = QJsonDocument::fromJson(contentStr.toUtf8());
+    if (!contentDoc.isObject()) {
+        emit errorOccurred("Failed to parse structured JSON response");
+        reply->deleteLater();
+        return;
+    }
+    
     auto result = contentDoc.object();
     auto translation = result["translation"].toString();
+    
+    if (translation.isEmpty()) {
+        emit errorOccurred("Translation field is empty in response");
+        reply->deleteLater();
+        return;
+    }
+    
     emit replyReceived(translation);
     reply->deleteLater();
 } 

@@ -213,7 +213,7 @@ void SpellChecker::highlightMisspelledWords()
     m_textEdit->blockSignals(oldBlock);
 }
 
-QStringList SpellChecker::extractWords(const QString &text)
+QStringList SpellChecker::extractWords(const QString &text) const
 {
     QStringList words;
     QStringList lines = text.split('\n');
@@ -554,7 +554,7 @@ void SpellChecker::cleanupNativeSpellChecker()
 #endif
 }
 
-QStringList SpellChecker::getSuggestionsForWord(const QString &word)
+QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
 {
     QString normWord = word.normalized(QString::NormalizationForm_C);
 #ifdef Q_OS_MACOS
@@ -600,7 +600,7 @@ QStringList SpellChecker::getSuggestionsForWord(const QString &word)
 #endif
 }
 
-bool SpellChecker::isWordMisspelled(const QString &word)
+bool SpellChecker::isWordMisspelled(const QString &word) const
 {
     QString normWord = word.normalized(QString::NormalizationForm_C);
 #ifdef Q_OS_MACOS
@@ -699,7 +699,7 @@ void SpellChecker::updateContextMenu()
     }
 }
 
-QString SpellChecker::getWordAtPosition(const QPoint &pos)
+QString SpellChecker::getWordAtPosition(const QPoint &pos) const
 {
     if (!m_textEdit) {
         return QString();
@@ -713,7 +713,7 @@ QString SpellChecker::getWordAtPosition(const QPoint &pos)
     return cursor.selectedText();
 }
 
-QTextCursor SpellChecker::getWordCursorAtPosition(const QPoint &pos)
+QTextCursor SpellChecker::getWordCursorAtPosition(const QPoint &pos) const
 {
     if (!m_textEdit) {
         return QTextCursor();

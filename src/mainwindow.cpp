@@ -10,9 +10,6 @@
 
 #include <QInputDialog>
 #include <QMessageBox>
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
-#include <QtNetwork/QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -36,6 +33,9 @@
 #include <QUrl>
 #include <QLocale>
 #include <QApplication>
+
+// Constants
+const QString MainWindow::OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -110,7 +110,6 @@ void MainWindow::saveSettings()
 
 void MainWindow::retrieveOpenAIApiKey()
 {
-    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
     connect(keychain, &KeychainManager::keyRestored, this,
             [=](const QString &key, const QString &value) {
                 openaiApiKey = value;
@@ -124,8 +123,6 @@ void MainWindow::retrieveOpenAIApiKey()
 
 void MainWindow::requestApiKeyPopup()
 {
-    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
-    
     ApiKeyDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         openaiApiKey = dialog.getApiKey();
@@ -150,7 +147,6 @@ void MainWindow::actionOpenCorrectionsFolder()
 
 void MainWindow::actionReset_OpenAI_API_key()
 {
-    static const QString OPENAI_API_KEY_KEYCHAIN_KEY = "hytromo/immersion/openai_api_key";
     keychain->deleteKey(OPENAI_API_KEY_KEYCHAIN_KEY);
     openaiApiKey = "";
     requestApiKeyPopup();
@@ -280,80 +276,44 @@ void MainWindow::actionQuit()
 
 void MainWindow::actionEditTranslationModel()
 {
-    QString currentModel = settingsManager->translationModelName();
-    QString newModel = QInputDialog::getText(this, "Edit Translation Model", 
-                                           "Enter the translation model name:", 
-                                           QLineEdit::Normal, currentModel);
-    if (!newModel.isEmpty() && newModel != currentModel) {
-        settingsManager->setTranslationModelName(newModel);
-        settingsManager->sync();
-    }
+    editModelSetting(settingsManager->translationModelName(), 
+                    "Edit Translation Model", 
+                    &SettingsManager::setTranslationModelName);
 }
 
 void MainWindow::actionEditReportsModel()
 {
-    QString currentModel = settingsManager->reportModelName();
-    QString newModel = QInputDialog::getText(this, "Edit Reports Model", 
-                                           "Enter the reports model name:", 
-                                           QLineEdit::Normal, currentModel);
-    if (!newModel.isEmpty() && newModel != currentModel) {
-        settingsManager->setReportModelName(newModel);
-        settingsManager->sync();
-    }
+    editModelSetting(settingsManager->reportModelName(), 
+                    "Edit Reports Model", 
+                    &SettingsManager::setReportModelName);
 }
 
 void MainWindow::actionEditTranslationPrompt()
 {
-    PromptEditDialog dialog(PromptType::Translation, this);
-    dialog.setPrompt(settingsManager->translationPrompt());
-    
-    if (dialog.exec() == QDialog::Accepted) {
-        QString newPrompt = dialog.getPrompt();
-        if (!newPrompt.isEmpty()) {
-            settingsManager->setTranslationPrompt(newPrompt);
-            settingsManager->sync();
-        }
-    }
+    editPromptSetting(PromptType::Translation, 
+                     settingsManager->translationPrompt(), 
+                     &SettingsManager::setTranslationPrompt);
 }
 
 void MainWindow::actionEditReportPrompt()
 {
-    PromptEditDialog dialog(PromptType::Report, this);
-    dialog.setPrompt(settingsManager->reportPrompt());
-    
-    if (dialog.exec() == QDialog::Accepted) {
-        QString newPrompt = dialog.getPrompt();
-        if (!newPrompt.isEmpty()) {
-            settingsManager->setReportPrompt(newPrompt);
-            settingsManager->sync();
-        }
-    }
+    editPromptSetting(PromptType::Report, 
+                     settingsManager->reportPrompt(), 
+                     &SettingsManager::setReportPrompt);
 }
 
 void MainWindow::actionEditFeedbackPrompt()
 {
-    PromptEditDialog dialog(PromptType::Feedback, this);
-    dialog.setPrompt(settingsManager->feedbackPrompt());
-    
-    if (dialog.exec() == QDialog::Accepted) {
-        QString newPrompt = dialog.getPrompt();
-        if (!newPrompt.isEmpty()) {
-            settingsManager->setFeedbackPrompt(newPrompt);
-            settingsManager->sync();
-        }
-    }
+    editPromptSetting(PromptType::Feedback, 
+                     settingsManager->feedbackPrompt(), 
+                     &SettingsManager::setFeedbackPrompt);
 }
 
 void MainWindow::actionEditFeedbackModel()
 {
-    QString currentModel = settingsManager->feedbackModelName();
-    QString newModel = QInputDialog::getText(this, "Edit quick feedback model",
-                                           "Enter the quick feedback model name:",
-                                           QLineEdit::Normal, currentModel);
-    if (!newModel.isEmpty() && newModel != currentModel) {
-        settingsManager->setFeedbackModelName(newModel);
-        settingsManager->sync();
-    }
+    editModelSetting(settingsManager->feedbackModelName(), 
+                    "Edit quick feedback model", 
+                    &SettingsManager::setFeedbackModelName);
 }
 
 void MainWindow::actionEditSpellCheckerLanguage()
@@ -516,7 +476,7 @@ void MainWindow::setupGenerateReportMenu()
     }
 }
 
-QString MainWindow::formatDateForDisplay(const QDate &date)
+QString MainWindow::formatDateForDisplay(const QDate &date) const
 {
     int day = date.day();
     QString daySuffix;
@@ -608,7 +568,7 @@ void MainWindow::setupSpellChecker()
     }
 }
 
-QString MainWindow::mapLanguageToSpellCheckLanguage(const QString &language)
+QString MainWindow::mapLanguageToSpellCheckLanguage(const QString &language) const
 {
     // Map common language names to macOS spell checker language codes
     QMap<QString, QString> languageMap;
@@ -640,4 +600,31 @@ void MainWindow::updateSpellCheckerStatusLabel() {
     bool visual = spellChecker->isVisualSpellCheckingEnabled();
     ui->spellCheckerStatus->setText(QString("Spell checker: %1").arg(lang));
     ui->spellCheckerStatus->setStyleSheet(visual ? "color: green; font-size: 10pt;" : "color: gray; font-size: 10pt;");
+}
+
+void MainWindow::editModelSetting(const QString &currentValue, const QString &dialogTitle, 
+                                 void (SettingsManager::*setter)(const QString &))
+{
+    QString newValue = QInputDialog::getText(this, dialogTitle, 
+                                           "Enter the model name:", 
+                                           QLineEdit::Normal, currentValue);
+    if (!newValue.isEmpty() && newValue != currentValue) {
+        (settingsManager->*setter)(newValue);
+        settingsManager->sync();
+    }
+}
+
+void MainWindow::editPromptSetting(PromptType promptType, const QString &currentPrompt,
+                                  void (SettingsManager::*setter)(const QString &))
+{
+    PromptEditDialog dialog(promptType, this);
+    dialog.setPrompt(currentPrompt);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QString newPrompt = dialog.getPrompt();
+        if (!newPrompt.isEmpty()) {
+            (settingsManager->*setter)(newPrompt);
+            settingsManager->sync();
+        }
+    }
 }

@@ -41,46 +41,74 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
 
 private slots:
+    // UI Event Handlers
     void on_goButton_clicked();
+    void onHistoryActionTriggered();
+    void onGenerateReportActionTriggered();
+    
+    // Menu Actions
     void actionReset_OpenAI_API_key();
     void actionOpenCorrectionsFolder();
     void actionGenerateMistakesReport();
     void actionHelp();
     void actionQuit();
+    
+    // Settings Actions
     void actionEditTranslationModel();
     void actionEditReportsModel();
     void actionEditFeedbackModel();
     void actionEditTranslationPrompt();
     void actionEditReportPrompt();
     void actionEditFeedbackPrompt();
-    void onHistoryActionTriggered();
-    void onGenerateReportActionTriggered();
     void actionEditSpellCheckerLanguage();
     void actionToggleVisualSpellChecking();
 
 private:
+    // UI Components
     Ui::MainWindow *ui;
+    
+    // Managers
     KeychainManager *keychain;
     AppDataManager *appDataManager;
     SettingsManager *settingsManager;
     SpellChecker *spellChecker;
+    
+    // State
     QString openaiApiKey;
 
+    // Constants
+    static const QString OPENAI_API_KEY_KEYCHAIN_KEY;
+    static const int MAX_HISTORY_SIZE = 5;
+
+    // API Key Management
     void retrieveOpenAIApiKey();
     void requestApiKeyPopup();
-    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
+    
+    // UI Setup
     void setupHistoryMenu();
-    void addMessageToHistory(const QString &message);
     void setupGenerateReportMenu();
-    QString formatDateForDisplay(const QDate &date);
+    void setupSpellChecker();
+    void updateSpellCheckerStatusLabel();
+    
+    // Data Management
+    void addMessageToHistory(const QString &message);
     void generateReportForDate(const QString &dateString);
     void saveSettings();
-    void setupSpellChecker();
-    QString mapLanguageToSpellCheckLanguage(const QString &language);
-    void updateSpellCheckerStatusLabel();
+    
+    // Utility Methods
+    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
+    QString formatDateForDisplay(const QDate &date) const;
+    QString mapLanguageToSpellCheckLanguage(const QString &language) const;
+    
+    // Helper Methods for Settings Actions
+    void editModelSetting(const QString &currentValue, const QString &dialogTitle, 
+                         void (SettingsManager::*setter)(const QString &));
+    void editPromptSetting(PromptType promptType, const QString &currentPrompt,
+                          void (SettingsManager::*setter)(const QString &));
 };
+
 #endif // MAINWINDOW_H

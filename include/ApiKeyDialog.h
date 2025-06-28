@@ -17,6 +17,10 @@ public:
     QString getApiKey() const;
 
 private:
+    void setupDialog();
+    void setupLayout();
+    void setupConnections();
+    
     QLineEdit *input;
     QString apiKey;
 };
