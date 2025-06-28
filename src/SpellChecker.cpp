@@ -247,6 +247,9 @@ bool SpellChecker::isSpellCheckingAvailable() const
 {
 #ifdef Q_OS_WIN
     return m_spellChecker != nullptr;
+#elif defined(Q_OS_MACOS)
+    // macOS implementation is in SpellChecker_macOS.mm
+    return false; // This will be overridden by the .mm file
 #else
     return false;
 #endif
@@ -257,6 +260,7 @@ QStringList SpellChecker::getAvailableLanguages() const
 #ifdef Q_OS_WIN
     QStringList languages;
     if (!m_spellCheckerFactory) return languages;
+    
     IEnumString *langEnum = nullptr;
     HRESULT hr = static_cast<ISpellCheckerFactory*>(m_spellCheckerFactory)->get_SupportedLanguages(&langEnum);
     if (SUCCEEDED(hr) && langEnum) {
@@ -269,6 +273,9 @@ QStringList SpellChecker::getAvailableLanguages() const
         langEnum->Release();
     }
     return languages;
+#elif defined(Q_OS_MACOS)
+    // macOS implementation is in SpellChecker_macOS.mm
+    return QStringList(); // This will be overridden by the .mm file
 #else
     return QStringList();
 #endif
@@ -285,35 +292,18 @@ void SpellChecker::setLanguage(const QString &language)
     if (m_spellCheckerFactory) {
         ISpellChecker *checker = nullptr;
         QString lang = toWindowsLang(language);
-        qDebug() << "Setting Windows spell checker language to:" << lang;
-        
         std::wstring wideLang = lang.toStdWString();
         HRESULT hr = static_cast<ISpellCheckerFactory*>(m_spellCheckerFactory)->CreateSpellChecker(wideLang.c_str(), &checker);
-        
         if (SUCCEEDED(hr)) {
             m_spellChecker = checker;
-            qDebug() << "Windows spell checker language set to:" << lang;
-        } else {
-            m_spellChecker = nullptr;
-            qWarning() << "Failed to set Windows spell checker language to:" << lang << "HRESULT:" << QString::number(hr, 16);
-            
-            // Try fallback to en-US
-            qDebug() << "Trying fallback to en-US";
-            hr = static_cast<ISpellCheckerFactory*>(m_spellCheckerFactory)->CreateSpellChecker(L"en-US", &checker);
-            if (SUCCEEDED(hr)) {
-                m_spellChecker = checker;
-                qDebug() << "Windows spell checker set to fallback en-US";
-            } else {
-                qWarning() << "Failed to set Windows spell checker even with en-US fallback";
-            }
         }
     }
+#elif defined(Q_OS_MACOS)
+    // macOS implementation is in SpellChecker_macOS.mm
+    Q_UNUSED(this);
+#else
+    Q_UNUSED(this);
 #endif
-    
-    // Re-perform spell check with new language
-    if (m_visualSpellCheckingEnabled) {
-        performSpellCheck();
-    }
 }
 
 QString SpellChecker::getCurrentLanguage() const
@@ -486,6 +476,12 @@ void SpellChecker::initializeNativeSpellChecker()
             qWarning() << "Failed to create ISpellChecker even with en-US fallback, HRESULT:" << QString::number(hr, 16);
         }
     }
+#elif defined(Q_OS_MACOS)
+    // macOS implementation is in SpellChecker_macOS.mm
+    Q_UNUSED(this);
+#else
+    // No spell checker available on this platform
+    qDebug() << "No spell checker available on this platform";
 #endif
 }
 
@@ -501,6 +497,12 @@ void SpellChecker::cleanupNativeSpellChecker()
         m_spellCheckerFactory = nullptr;
     }
     CoUninitialize();
+#elif defined(Q_OS_MACOS)
+    // macOS implementation is in SpellChecker_macOS.mm
+    Q_UNUSED(this);
+#else
+    // No cleanup needed on other platforms
+    Q_UNUSED(this);
 #endif
 }
 

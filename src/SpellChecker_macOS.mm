@@ -78,10 +78,16 @@ QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
     NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
     NSString *nsWord = word.toNSString();
     
-    qDebug() << "Getting suggestions for word:" << word;
+    // Use the standard API for getting suggestions
+    NSArray *guesses = [spellChecker guessesForWordRange:NSMakeRange(0, [nsWord length]) 
+                                                 inString:nsWord 
+                                                 language:nil];
     
-    // Use a simpler approach - just return empty suggestions for now
-    // The full API might require additional setup
+    for (NSString *guess in guesses) {
+        suggestions.append(QString::fromNSString(guess));
+    }
+    
+    qDebug() << "macOS suggestions for" << word << ":" << suggestions;
     return suggestions;
 }
 
@@ -92,29 +98,35 @@ bool SpellChecker::isWordMisspelled(const QString &word) const
     NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
     NSString *nsWord = word.toNSString();
     
-    qDebug() << "Checking if word is misspelled:" << word;
+    // Use the standard API for checking spelling
+    NSRange misspelledRange = [spellChecker checkSpellingOfString:nsWord 
+                                                       startingAt:0];
     
-    // Use a simpler approach - assume all words are spelled correctly for now
-    // The full API might require additional setup
-    return false;
+    bool isMisspelled = (misspelledRange.location != NSNotFound);
+    qDebug() << "macOS spell check for" << word << ":" << (isMisspelled ? "misspelled" : "correct");
+    return isMisspelled;
 }
 
 void SpellChecker::addWordToDictionary(const QString &word)
 {
     if (!m_spellChecker) return;
     
-    qDebug() << "Adding word to dictionary:" << word;
-    // For now, just log the action
-    // The full API might require additional setup
+    NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
+    NSString *nsWord = word.toNSString();
+    
+    [spellChecker learnWord:nsWord];
+    qDebug() << "macOS: Added word to dictionary:" << word;
 }
 
 void SpellChecker::ignoreWordInDocument(const QString &word)
 {
     if (!m_spellChecker) return;
     
-    qDebug() << "Ignoring word in document:" << word;
-    // For now, just log the action
-    // The full API might require additional setup
+    NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
+    NSString *nsWord = word.toNSString();
+    
+    [spellChecker ignoreWord:nsWord inSpellDocumentWithTag:0];
+    qDebug() << "macOS: Ignored word in document:" << word;
 }
 
 #endif // Q_OS_MACOS 
