@@ -42,6 +42,8 @@ set(PROJECT_SOURCES
     include/PromptEditDialog.h
     src/FeedbackDialog.cpp
     include/FeedbackDialog.h
+    src/SingleInstance.cpp
+    include/SingleInstance.h
 )
 
 add_subdirectory("external/qtkeychain" qtkeychain_build)

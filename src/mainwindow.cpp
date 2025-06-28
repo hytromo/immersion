@@ -77,7 +77,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    saveSettings();
     delete ui;
 }
 
@@ -224,19 +223,19 @@ void MainWindow::on_goButton_clicked()
                 ui->goButton->setEnabled(true);
                 FeedbackDialog dialog(feedback, this);
                 dialog.exec();
-                this->close();
+                this->hide();
                 feedbackCommunicator->deleteLater();
             });
             
             connect(feedbackCommunicator, &OpenAICommunicator::errorOccurred, this, [=](const QString &errorString) {
                 ui->goButton->setEnabled(true);
                 QMessageBox::warning(this, "Feedback Error", "Failed to get feedback: " + errorString);
-                this->close();
+                this->hide();
                 feedbackCommunicator->deleteLater();
             });
         } else {
             ui->goButton->setEnabled(true);
-            this->close();
+            this->hide();
         }
         
         openaiCommunicator->deleteLater();

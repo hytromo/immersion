@@ -152,6 +152,32 @@ jobs:
         Rename-Item -Path "build/installer/ImmersionSetup.exe" -NewName $installerName
         echo "Resulting file available at: $installerName"
 
+    # --- Artifact Upload for Pull Requests ---
+    - name: Upload Windows artifacts
+      if: startsWith(matrix.arch, 'windows') && github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer-${{ matrix.arch }}
+        path: build/installer/ImmersionSetup*.exe
+        retention-days: 7
+
+    - name: Upload macOS artifacts
+      if: matrix.arch == 'macos' && github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-installer-${{ matrix.arch }}
+        path: Immersion*.dmg
+        retention-days: 7
+
+    - name: Upload Linux artifacts
+      if: startsWith(matrix.arch, 'linux') && github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-installer-${{ matrix.arch }}
+        path: Immersion*.flatpak
+        retention-days: 7
+
+    # --- Release Creation for Tags ---
     - name: Release Windows
       if: startsWith(matrix.arch, 'windows') && github.ref_type == 'tag'
       uses: softprops/action-gh-release@v2
