@@ -10,11 +10,6 @@
 #include <QTimer>
 #include <QTextCharFormat>
 
-#ifdef Q_OS_MACOS
-#include <QMacNativeWidget>
-#include <QMacCocoaViewContainer>
-#endif
-
 class SpellChecker : public QObject
 {
     Q_OBJECT
