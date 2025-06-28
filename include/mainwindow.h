@@ -74,5 +74,6 @@ private:
     void setupGenerateReportMenu();
     QString formatDateForDisplay(const QDate &date);
     void generateReportForDate(const QString &dateString);
+    void saveSettings();
 };
 #endif // MAINWINDOW_H

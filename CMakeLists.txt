@@ -14,30 +14,35 @@ set(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Concurrent)
 
-set(PROJECT_SOURCES
-    AppDataManager.cpp
-    AppDataManager.h
-    OpenAICommunicator.cpp
-    OpenAICommunicator.h
-    SettingsManager.cpp
-    SettingsManager.h
-    keychainclass.cpp
-    keychainclass.h
-    main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    mainwindow.ui
-    progressdialog.h
-    progressdialog.cpp
-    progressdialog.ui
-    ApiKeyDialog.cpp
-    ApiKeyDialog.h
-    PromptEditDialog.cpp
-    PromptEditDialog.h
-    FeedbackDialog.cpp
-    FeedbackDialog.h
-)
+# Add include directories
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# Set UI file directory for AutoUic
+set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
+
+set(PROJECT_SOURCES
+    src/AppDataManager.cpp
+    include/AppDataManager.h
+    src/OpenAICommunicator.cpp
+    include/OpenAICommunicator.h
+    src/SettingsManager.cpp
+    include/SettingsManager.h
+    src/keychainclass.cpp
+    include/keychainclass.h
+    src/main.cpp
+    src/mainwindow.cpp
+    include/mainwindow.h
+    ui/mainwindow.ui
+    include/progressdialog.h
+    src/progressdialog.cpp
+    ui/progressdialog.ui
+    src/ApiKeyDialog.cpp
+    include/ApiKeyDialog.h
+    src/PromptEditDialog.cpp
+    include/PromptEditDialog.h
+    src/FeedbackDialog.cpp
+    include/FeedbackDialog.h
+)
 
 add_subdirectory("external/qtkeychain" qtkeychain_build)
 
@@ -48,7 +53,6 @@ if (WIN32)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ${APP_ICON_RESOURCE_WINDOWS}
-        progressdialog.h progressdialog.cpp progressdialog.ui
     )
 #! [appicon_windows]
 elseif (APPLE)
