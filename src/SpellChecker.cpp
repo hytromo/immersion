@@ -6,11 +6,6 @@
 #include <QTimer>
 #include <QRegularExpression>
 
-#ifdef Q_OS_MACOS
-#include <AppKit/AppKit.h>
-#include <Foundation/Foundation.h>
-#endif
-
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <objbase.h>
@@ -52,10 +47,6 @@ SpellChecker::SpellChecker(QObject *parent)
     , m_selectedWord("")
     , m_contextMenuPos()
     , m_visualSpellCheckingEnabled(false)
-#ifdef Q_OS_MACOS
-    , m_spellChecker(nullptr)
-    , m_textChecker(nullptr)
-#endif
 #ifdef Q_OS_WIN
     , m_spellCheckerFactory(nullptr)
     , m_spellChecker(nullptr)
@@ -254,9 +245,7 @@ QStringList SpellChecker::extractWords(const QString &text) const
 
 bool SpellChecker::isSpellCheckingAvailable() const
 {
-#ifdef Q_OS_MACOS
-    return m_spellChecker != nullptr;
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     return m_spellChecker != nullptr;
 #else
     return false;
@@ -265,17 +254,7 @@ bool SpellChecker::isSpellCheckingAvailable() const
 
 QStringList SpellChecker::getAvailableLanguages() const
 {
-#ifdef Q_OS_MACOS
-    QStringList languages;
-    if (m_spellChecker) {
-        NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
-        NSArray *availableLanguages = [spellChecker availableLanguages];
-        for (NSString *language in availableLanguages) {
-            languages.append(QString::fromNSString(language));
-        }
-    }
-    return languages;
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     QStringList languages;
     if (!m_spellCheckerFactory) return languages;
     IEnumString *langEnum = nullptr;
@@ -298,13 +277,7 @@ QStringList SpellChecker::getAvailableLanguages() const
 void SpellChecker::setLanguage(const QString &language)
 {
     m_currentLanguage = language;
-#ifdef Q_OS_MACOS
-    if (m_spellChecker) {
-        NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
-        NSString *nsLanguage = language.toNSString();
-        [spellChecker setLanguage:nsLanguage];
-    }
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     if (m_spellChecker) {
         static_cast<ISpellChecker*>(m_spellChecker)->Release();
         m_spellChecker = nullptr;
@@ -366,21 +339,10 @@ void SpellChecker::showContextMenu(const QPoint &pos)
     }
     
     // Check if the word is misspelled
-#ifdef Q_OS_MACOS
     if (!isWordMisspelled(word)) {
         qDebug() << "Word is not misspelled, not showing menu";
         return; // Word is spelled correctly, don't show spell check menu
     }
-#elif defined(Q_OS_WIN)
-    if (!isWordMisspelled(word)) {
-        qDebug() << "Word is not misspelled, not showing menu";
-        return; // Word is spelled correctly, don't show spell check menu
-    }
-#else
-    // On non-supported platforms, do not show spell check menu
-    qDebug() << "Platform not supported for spell checking";
-    return;
-#endif
     
     qDebug() << "Showing spell check context menu for misspelled word:" << word;
     
@@ -390,12 +352,7 @@ void SpellChecker::showContextMenu(const QPoint &pos)
     QMenu contextMenu(m_textEdit);
     
     // Add suggestions
-    QStringList suggestions;
-#ifdef Q_OS_MACOS
-    suggestions = getSuggestionsForWord(word);
-#elif defined(Q_OS_WIN)
-    suggestions = getSuggestionsForWord(word);
-#endif
+    QStringList suggestions = getSuggestionsForWord(word);
     
     qDebug() << "Suggestions for" << word << ":" << suggestions;
     
@@ -423,12 +380,7 @@ void SpellChecker::replaceWord()
         return;
     }
     
-    QStringList suggestions;
-#ifdef Q_OS_MACOS
-    suggestions = getSuggestionsForWord(m_selectedWord);
-#elif defined(Q_OS_WIN)
-    suggestions = getSuggestionsForWord(m_selectedWord);
-#endif
+    QStringList suggestions = getSuggestionsForWord(m_selectedWord);
     
     QString replacement;
     if (!suggestions.isEmpty()) {
@@ -457,11 +409,7 @@ void SpellChecker::addToDictionary()
         return;
     }
     
-#ifdef Q_OS_MACOS
     addWordToDictionary(m_selectedWord);
-#elif defined(Q_OS_WIN)
-    addWordToDictionary(m_selectedWord);
-#endif
     
     QMessageBox::information(m_textEdit, "Word Added",
                            QString("'%1' has been added to the dictionary.").arg(m_selectedWord));
@@ -473,11 +421,7 @@ void SpellChecker::ignoreWord()
         return;
     }
     
-#ifdef Q_OS_MACOS
     ignoreWordInDocument(m_selectedWord);
-#elif defined(Q_OS_WIN)
-    ignoreWordInDocument(m_selectedWord);
-#endif
     
     QMessageBox::information(m_textEdit, "Word Ignored",
                            QString("'%1' will be ignored in this document.").arg(m_selectedWord));
@@ -485,19 +429,7 @@ void SpellChecker::ignoreWord()
 
 void SpellChecker::initializeNativeSpellChecker()
 {
-#ifdef Q_OS_MACOS
-    NSSpellChecker *spellChecker = [NSSpellChecker sharedSpellChecker];
-    if (spellChecker) {
-        m_spellChecker = spellChecker;
-        NSString *defaultLanguage = [spellChecker language];
-        if (defaultLanguage) {
-            m_currentLanguage = QString::fromNSString(defaultLanguage);
-        }
-        qDebug() << "Native spell checker initialized with language:" << m_currentLanguage;
-    } else {
-        qWarning() << "Failed to initialize native spell checker";
-    }
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) {
         qWarning() << "Failed to initialize COM for spell checker";
@@ -559,10 +491,7 @@ void SpellChecker::initializeNativeSpellChecker()
 
 void SpellChecker::cleanupNativeSpellChecker()
 {
-#ifdef Q_OS_MACOS
-    m_spellChecker = nullptr;
-    m_textChecker = nullptr;
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     if (m_spellChecker) {
         static_cast<ISpellChecker*>(m_spellChecker)->Release();
         m_spellChecker = nullptr;
@@ -577,22 +506,11 @@ void SpellChecker::cleanupNativeSpellChecker()
 
 QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
 {
+#ifdef Q_OS_WIN
     QString normWord = word.normalized(QString::NormalizationForm_C);
-#ifdef Q_OS_MACOS
-    QStringList suggestions;
-    if (!m_spellChecker) return suggestions;
-    NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
-    NSString *nsWord = normWord.toNSString();
-    NSArray *guesses = [spellChecker guessesForWordRange:NSMakeRange(0, [nsWord length]) inString:nsWord language:m_currentLanguage.toNSString()];
-    for (NSString *guess in guesses) {
-        suggestions.append(QString::fromNSString(guess));
-    }
-    return suggestions;
-#elif defined(Q_OS_WIN)
-    QStringList suggestions;
     if (!m_spellChecker) {
         qDebug() << "Windows spell checker not available for suggestions for word:" << normWord;
-        return suggestions;
+        return QStringList();
     }
     
     // Convert word to wide string
@@ -602,6 +520,7 @@ QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
     IEnumString *enumSuggestions = nullptr;
     HRESULT hr = static_cast<ISpellChecker*>(m_spellChecker)->Suggest(wideWord.c_str(), &enumSuggestions);
     
+    QStringList suggestions;
     if (SUCCEEDED(hr) && enumSuggestions) {
         LPOLESTR suggestion = nullptr;
         ULONG fetched = 0;
@@ -623,14 +542,8 @@ QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
 
 bool SpellChecker::isWordMisspelled(const QString &word) const
 {
+#ifdef Q_OS_WIN
     QString normWord = word.normalized(QString::NormalizationForm_C);
-#ifdef Q_OS_MACOS
-    if (!m_spellChecker) return false;
-    NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
-    NSString *nsWord = normWord.toNSString();
-    NSRange misspelledRange = [spellChecker checkSpellingOfString:nsWord startingAt:0 language:m_currentLanguage.toNSString()];
-    return misspelledRange.location != NSNotFound;
-#elif defined(Q_OS_WIN)
     if (!m_spellChecker) {
         qDebug() << "Windows spell checker not available for word:" << normWord;
         return false;
@@ -665,14 +578,21 @@ bool SpellChecker::isWordMisspelled(const QString &word) const
 #endif
 }
 
+void SpellChecker::replaceWordWithSuggestion(const QString &replacement)
+{
+    if (!m_textEdit || m_selectedWord.isEmpty()) {
+        return;
+    }
+    
+    QTextCursor cursor = getWordCursorAtPosition(m_contextMenuPos);
+    if (!cursor.isNull()) {
+        cursor.insertText(replacement);
+    }
+}
+
 void SpellChecker::addWordToDictionary(const QString &word)
 {
-#ifdef Q_OS_MACOS
-    if (!m_spellChecker) return;
-    NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
-    NSString *nsWord = word.toNSString();
-    [spellChecker learnWord:nsWord];
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     if (!m_spellChecker) return;
     static_cast<ISpellChecker*>(m_spellChecker)->Add(_bstr_t(word.toStdWString().c_str()));
 #endif
@@ -680,39 +600,10 @@ void SpellChecker::addWordToDictionary(const QString &word)
 
 void SpellChecker::ignoreWordInDocument(const QString &word)
 {
-#ifdef Q_OS_MACOS
-    if (!m_spellChecker) return;
-    NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
-    NSString *nsWord = word.toNSString();
-    [spellChecker ignoreWord:nsWord inSpellDocumentWithTag:0];
-#elif defined(Q_OS_WIN)
+#ifdef Q_OS_WIN
     // Windows spell checker does not have a per-document ignore, so we do nothing or could implement a local ignore list.
     Q_UNUSED(word);
 #endif
-}
-
-void SpellChecker::setupContextMenu()
-{
-    connect(m_replaceAction.data(), &QAction::triggered, this, &SpellChecker::replaceWord);
-    connect(m_addToDictAction.data(), &QAction::triggered, this, &SpellChecker::addToDictionary);
-    connect(m_ignoreAction.data(), &QAction::triggered, this, &SpellChecker::ignoreWord);
-}
-
-void SpellChecker::updateContextMenu()
-{
-    if (m_selectedWord.isEmpty()) {
-        m_replaceAction->setEnabled(false);
-        m_addToDictAction->setEnabled(false);
-        m_ignoreAction->setEnabled(false);
-    } else {
-        m_replaceAction->setEnabled(true);
-        m_addToDictAction->setEnabled(true);
-        m_ignoreAction->setEnabled(true);
-        
-        m_replaceAction->setText(QString("Replace '%1'...").arg(m_selectedWord));
-        m_addToDictAction->setText(QString("Add '%1' to Dictionary").arg(m_selectedWord));
-        m_ignoreAction->setText(QString("Ignore '%1'").arg(m_selectedWord));
-    }
 }
 
 QString SpellChecker::getWordAtPosition(const QPoint &pos) const
@@ -741,14 +632,26 @@ QTextCursor SpellChecker::getWordCursorAtPosition(const QPoint &pos) const
     return cursor;
 }
 
-void SpellChecker::replaceWordWithSuggestion(const QString &replacement)
+void SpellChecker::setupContextMenu()
 {
-    if (!m_textEdit || m_selectedWord.isEmpty()) {
-        return;
-    }
-    
-    QTextCursor cursor = getWordCursorAtPosition(m_contextMenuPos);
-    if (!cursor.isNull()) {
-        cursor.insertText(replacement);
+    connect(m_replaceAction.data(), &QAction::triggered, this, &SpellChecker::replaceWord);
+    connect(m_addToDictAction.data(), &QAction::triggered, this, &SpellChecker::addToDictionary);
+    connect(m_ignoreAction.data(), &QAction::triggered, this, &SpellChecker::ignoreWord);
+}
+
+void SpellChecker::updateContextMenu()
+{
+    if (m_selectedWord.isEmpty()) {
+        m_replaceAction->setEnabled(false);
+        m_addToDictAction->setEnabled(false);
+        m_ignoreAction->setEnabled(false);
+    } else {
+        m_replaceAction->setEnabled(true);
+        m_addToDictAction->setEnabled(true);
+        m_ignoreAction->setEnabled(true);
+        
+        m_replaceAction->setText(QString("Replace '%1'...").arg(m_selectedWord));
+        m_addToDictAction->setText(QString("Add '%1' to Dictionary").arg(m_selectedWord));
+        m_ignoreAction->setText(QString("Ignore '%1'").arg(m_selectedWord));
     }
 } 

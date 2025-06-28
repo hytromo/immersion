@@ -61,6 +61,11 @@ set(PROJECT_SOURCES
     include/StringUtils.h
 )
 
+# Add macOS-specific spell checker implementation
+if(APPLE)
+    list(APPEND PROJECT_SOURCES src/SpellChecker_macOS.mm)
+endif()
+
 add_subdirectory("external/qtkeychain" qtkeychain_build)
 
 if (WIN32)
