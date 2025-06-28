@@ -450,6 +450,17 @@ void MainWindow::onHistoryActionTriggered()
     }
 }
 
+void MainWindow::onGenerateReportActionTriggered()
+{
+    QAction *action = qobject_cast<QAction*>(sender());
+    if (action) {
+        QString dateString = action->data().toString();
+        if (!dateString.isEmpty()) {
+            generateReportForDate(dateString);
+        }
+    }
+}
+
 void MainWindow::setupGenerateReportMenu()
 {
     // Clear existing report actions
@@ -527,17 +538,6 @@ QString MainWindow::formatDateForDisplay(const QDate &date)
     int year = date.year();
     
     return QString("%1%2 of %3 %4").arg(day).arg(daySuffix).arg(monthName).arg(year);
-}
-
-void MainWindow::onGenerateReportActionTriggered()
-{
-    QAction *action = qobject_cast<QAction*>(sender());
-    if (action) {
-        QString dateString = action->data().toString();
-        if (!dateString.isEmpty()) {
-            generateReportForDate(dateString);
-        }
-    }
 }
 
 void MainWindow::generateReportForDate(const QString &dateString)

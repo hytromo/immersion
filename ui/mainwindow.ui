@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>663</width>
-    <height>481</height>
+    <height>253</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -154,7 +154,13 @@
     <property name="title">
      <string>Reports</string>
     </property>
+    <widget class="QMenu" name="menuGenerateReport">
+     <property name="title">
+      <string>Generate report</string>
+     </property>
+    </widget>
     <addaction name="actionOpen_corrections_folder"/>
+    <addaction name="menuGenerateReport"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -195,16 +201,10 @@
     </property>
     <addaction name="actionHelp"/>
    </widget>
-   <widget class="QMenu" name="menuGenerateReport">
-    <property name="title">
-     <string>Generate report</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuReports"/>
    <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
-   <addaction name="menuGenerateReport"/>
   </widget>
   <action name="actionReset_OpenAI_API_key">
    <property name="text">
