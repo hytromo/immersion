@@ -33,14 +33,11 @@ int main(int argc, char *argv[])
     
     // Connect the signal to bring window to front
     QObject::connect(&singleInstance, &SingleInstance::bringToFrontRequested, [&w]() {
+        w.setWindowState(Qt::WindowNoState);
         w.show();
         w.raise();
         w.activateWindow();
-        
-        // Move to center of screen if minimized
-        if (w.windowState() == Qt::WindowMinimized) {
-            w.setWindowState(Qt::WindowNoState);
-        }
+        w.setFocus();
         
         // Ensure it's visible on the current screen
         QScreen *currentScreen = QGuiApplication::primaryScreen();
