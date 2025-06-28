@@ -34,6 +34,7 @@
 #include <QLabel>
 #include <QUrl>
 #include <QLocale>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -67,18 +68,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionEditFeedbackPrompt, SIGNAL(triggered()), this, SLOT(actionEditFeedbackPrompt()));
     connect(ui->actionEditFeedbackModel, SIGNAL(triggered()), this, SLOT(actionEditFeedbackModel()));
     
+    // Connect to application shutdown signal for graceful shutdown
+    connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveSettings);
+    
     setupHistoryMenu();
     setupGenerateReportMenu();
 }
 
 MainWindow::~MainWindow()
 {
+    saveSettings();
+    delete ui;
+}
+
+void MainWindow::saveSettings()
+{
     settingsManager->setSourceLang(ui->sourceLang->text());
     settingsManager->setTargetLang(ui->targetLang->text());
     settingsManager->setLastInputText(ui->inputText->toPlainText());
     settingsManager->sync();
     qDebug() << "Settings saved.";
-    delete ui;
 }
 
 void MainWindow::retrieveOpenAIApiKey()
