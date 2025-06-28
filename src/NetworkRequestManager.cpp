@@ -1,6 +1,7 @@
 #include "NetworkRequestManager.h"
 #include "ProgressDialog.h"
 #include <QMessageBox>
+#include <memory>
 
 NetworkRequestManager::NetworkRequestManager(QObject *parent)
     : QObject(parent)
@@ -26,8 +27,10 @@ void NetworkRequestManager::executeRequest(const QString &apiKey,
     }
 
     parent->setEnabled(false);
-    auto progress = new ProgressDialog(parent);
-    auto openaiCommunicator = new OpenAICommunicator(apiKey, this);
+    
+    // Using std::unique_ptr for better memory management
+    std::unique_ptr<ProgressDialog> progress(new ProgressDialog(parent));
+    std::unique_ptr<OpenAICommunicator> openaiCommunicator(new OpenAICommunicator(apiKey, this));
     
     if (!progressTitle.isEmpty()) {
         progress->setWindowTitle(progressTitle);
@@ -38,7 +41,8 @@ void NetworkRequestManager::executeRequest(const QString &apiKey,
     openaiCommunicator->setPromptRaw(prompt + "\n\n" + inputText);
     openaiCommunicator->sendRequest();
 
-    connectOpenAICommunicator(openaiCommunicator, progress, successCallback, errorCallback);
+    // Transfer ownership to the connection function using release()
+    connectOpenAICommunicator(openaiCommunicator.release(), progress.release(), parent, successCallback, errorCallback);
 }
 
 void NetworkRequestManager::executeReportRequest(const QString &apiKey,
@@ -68,18 +72,21 @@ void NetworkRequestManager::executeReportRequest(const QString &apiKey,
     }
 
     parent->setEnabled(false);
-    auto progress = new ProgressDialog(parent);
-    auto openaiCommunicator = new OpenAICommunicator(apiKey, this);
+    
+    // Using std::unique_ptr for better memory management
+    std::unique_ptr<ProgressDialog> progress(new ProgressDialog(parent));
+    std::unique_ptr<OpenAICommunicator> openaiCommunicator(new OpenAICommunicator(apiKey, this));
     progress->show();
 
     openaiCommunicator->setModelName(modelName);
     openaiCommunicator->setPromptRaw(prompt + "\n\n" + fileContent);
     openaiCommunicator->sendRequest();
 
-    connectOpenAICommunicator(openaiCommunicator, progress, successCallback, errorCallback);
+    // Transfer ownership to the connection function using release()
+    connectOpenAICommunicator(openaiCommunicator.release(), progress.release(), parent, successCallback, errorCallback);
 }
 
-void NetworkRequestManager::cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator)
+void NetworkRequestManager::cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator, QWidget *parentWidget)
 {
     if (progress) {
         progress->close();
@@ -90,19 +97,20 @@ void NetworkRequestManager::cleanupProgressAndCommunicator(QDialog *progress, Op
     }
     
     // Re-enable the parent widget
-    if (QWidget *parentWidget = qobject_cast<QWidget*>(parent())) {
+    if (parentWidget) {
         parentWidget->setEnabled(true);
     }
 }
 
 void NetworkRequestManager::connectOpenAICommunicator(OpenAICommunicator *communicator, 
                                                     QDialog *progress,
+                                                    QWidget *parent,
                                                     std::function<void(const QString&)> successCallback,
                                                     std::function<void(const QString&)> errorCallback)
 {
     connect(communicator, &OpenAICommunicator::replyReceived, this, 
             [=](const QString &response) mutable {
-                cleanupProgressAndCommunicator(progress, communicator);
+                cleanupProgressAndCommunicator(progress, communicator, parent);
                 if (successCallback) {
                     successCallback(response);
                 }
@@ -110,11 +118,11 @@ void NetworkRequestManager::connectOpenAICommunicator(OpenAICommunicator *commun
     
     connect(communicator, &OpenAICommunicator::errorOccurred, this, 
             [=](const QString &errorString) mutable {
-                cleanupProgressAndCommunicator(progress, communicator);
+                cleanupProgressAndCommunicator(progress, communicator, parent);
                 if (errorCallback) {
                     errorCallback(errorString);
                 } else {
-                    QMessageBox::warning(qobject_cast<QWidget*>(parent()), "Network Error", errorString);
+                    QMessageBox::warning(parent, "Network Error", errorString);
                 }
             });
 } 

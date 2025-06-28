@@ -16,7 +16,9 @@
 #include <objbase.h>
 #include <spellcheck.h>
 #include <comdef.h>
+#ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
+#endif
 #endif
 
 // Constants
@@ -42,13 +44,14 @@ QString toWindowsLang(const QString &lang) {
 SpellChecker::SpellChecker(QObject *parent)
     : QObject(parent)
     , m_textEdit(nullptr)
+    , m_spellCheckTimer(new QTimer(this))
+    , m_replaceAction(new QAction("Replace...", this))
+    , m_addToDictAction(new QAction("Add to Dictionary", this))
+    , m_ignoreAction(new QAction("Ignore", this))
     , m_currentLanguage("en_US")
     , m_selectedWord("")
+    , m_contextMenuPos()
     , m_visualSpellCheckingEnabled(false)
-    , m_spellCheckTimer(new QTimer(this))
-    , m_replaceAction(nullptr)
-    , m_addToDictAction(nullptr)
-    , m_ignoreAction(nullptr)
 #ifdef Q_OS_MACOS
     , m_spellChecker(nullptr)
     , m_textChecker(nullptr)
@@ -135,7 +138,7 @@ void SpellChecker::setupVisualSpellChecking()
     // Configure the spell check timer (debounced spell checking)
     m_spellCheckTimer->setSingleShot(true);
     m_spellCheckTimer->setInterval(SPELL_CHECK_DELAY_MS);
-    connect(m_spellCheckTimer, &QTimer::timeout, this, &SpellChecker::performSpellCheck);
+    connect(m_spellCheckTimer.data(), &QTimer::timeout, this, &SpellChecker::performSpellCheck);
 }
 
 void SpellChecker::onTextChanged()
@@ -407,9 +410,9 @@ void SpellChecker::showContextMenu(const QPoint &pos)
     }
     
     // Add spell check actions
-    contextMenu.addAction(m_replaceAction);
-    contextMenu.addAction(m_addToDictAction);
-    contextMenu.addAction(m_ignoreAction);
+    contextMenu.addAction(m_replaceAction.data());
+    contextMenu.addAction(m_addToDictAction.data());
+    contextMenu.addAction(m_ignoreAction.data());
     
     contextMenu.exec(m_textEdit->mapToGlobal(pos));
 }
@@ -642,7 +645,6 @@ bool SpellChecker::isWordMisspelled(const QString &word) const
     
     if (SUCCEEDED(hr) && errors) {
         ISpellingError *error = nullptr;
-        ULONG fetched = 0;
         bool hasError = false;
         
         // Check if there are any spelling errors
@@ -691,13 +693,9 @@ void SpellChecker::ignoreWordInDocument(const QString &word)
 
 void SpellChecker::setupContextMenu()
 {
-    m_replaceAction = new QAction("Replace...", this);
-    m_addToDictAction = new QAction("Add to Dictionary", this);
-    m_ignoreAction = new QAction("Ignore", this);
-    
-    connect(m_replaceAction, &QAction::triggered, this, &SpellChecker::replaceWord);
-    connect(m_addToDictAction, &QAction::triggered, this, &SpellChecker::addToDictionary);
-    connect(m_ignoreAction, &QAction::triggered, this, &SpellChecker::ignoreWord);
+    connect(m_replaceAction.data(), &QAction::triggered, this, &SpellChecker::replaceWord);
+    connect(m_addToDictAction.data(), &QAction::triggered, this, &SpellChecker::addToDictionary);
+    connect(m_ignoreAction.data(), &QAction::triggered, this, &SpellChecker::ignoreWord);
 }
 
 void SpellChecker::updateContextMenu()

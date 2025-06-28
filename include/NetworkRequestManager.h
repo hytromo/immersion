@@ -33,9 +33,10 @@ public:
                              std::function<void(const QString&)> errorCallback = nullptr);
 
 private:
-    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator);
+    void cleanupProgressAndCommunicator(QDialog *progress, OpenAICommunicator *communicator, QWidget *parentWidget);
     void connectOpenAICommunicator(OpenAICommunicator *communicator, 
                                   QDialog *progress,
+                                  QWidget *parentWidget,
                                   std::function<void(const QString&)> successCallback,
                                   std::function<void(const QString&)> errorCallback);
 };

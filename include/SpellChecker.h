@@ -9,6 +9,7 @@
 #include <QStringList>
 #include <QTimer>
 #include <QTextCharFormat>
+#include <QScopedPointer>
 
 class SpellChecker : public QObject
 {
@@ -51,13 +52,13 @@ private slots:
 private:
     // UI Components
     QPlainTextEdit *m_textEdit;
-    QTimer *m_spellCheckTimer;
+    QScopedPointer<QTimer> m_spellCheckTimer;
     QTextCharFormat m_misspelledFormat;
     
-    // Context menu actions
-    QAction *m_replaceAction;
-    QAction *m_addToDictAction;
-    QAction *m_ignoreAction;
+    // Context menu actions - using smart pointers for better memory management
+    QScopedPointer<QAction> m_replaceAction;
+    QScopedPointer<QAction> m_addToDictAction;
+    QScopedPointer<QAction> m_ignoreAction;
     
     // State
     QString m_currentLanguage;

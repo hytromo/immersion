@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "SingleInstance.h"
+#include "AppConfig.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -13,11 +14,11 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // Set application metadata
-    QCoreApplication::setOrganizationName("hytromo");
-    QCoreApplication::setOrganizationDomain("hytromo.github.io");
-    QCoreApplication::setApplicationName("immersion");
-    QCoreApplication::setApplicationVersion("0.1");
+    // Set application metadata using centralized configuration
+    QCoreApplication::setOrganizationName(AppConfig::ORGANIZATION_NAME);
+    QCoreApplication::setOrganizationDomain(AppConfig::ORGANIZATION_DOMAIN);
+    QCoreApplication::setApplicationName(AppConfig::APPLICATION_NAME);
+    QCoreApplication::setApplicationVersion(AppConfig::APPLICATION_VERSION);
 
     // Check for single instance
     SingleInstance singleInstance;
@@ -48,21 +49,8 @@ int main(int argc, char *argv[])
         mainWindow.setFocus();
         
         // Ensure it's visible on the current screen
-        if (const QScreen *currentScreen = QGuiApplication::primaryScreen()) {
-            const QRect screenGeometry = currentScreen->geometry();
-            const QRect windowGeometry = mainWindow.geometry();
-            
-            // If window is outside visible area, center it
-            if (!screenGeometry.intersects(windowGeometry)) {
-                int newX = screenGeometry.center().x() - windowGeometry.width() / 2;
-                int newY = screenGeometry.center().y() - windowGeometry.height() / 2;
-                
-                // Ensure window doesn't go off-screen
-                newX = qMax(screenGeometry.left(), qMin(newX, screenGeometry.right() - windowGeometry.width()));
-                newY = qMax(screenGeometry.top(), qMin(newY, screenGeometry.bottom() - windowGeometry.height()));
-                
-                mainWindow.move(newX, newY);
-            }
+        if (!mainWindow.isWindowOnScreen()) {
+            mainWindow.centerWindowOnScreen();
         }
     });
     

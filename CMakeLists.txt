@@ -9,6 +9,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable additional warnings for better code quality
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 set(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Concurrent)
@@ -21,6 +28,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 
 set(PROJECT_SOURCES
+    src/AppConfig.cpp
+    include/AppConfig.h
     src/AppDataManager.cpp
     include/AppDataManager.h
     src/OpenAICommunicator.cpp

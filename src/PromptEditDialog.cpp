@@ -90,14 +90,13 @@ QString PromptEditDialog::getVariableInfo() const
 
 QString PromptEditDialog::getDefaultPrompt() const
 {
-    SettingsManager tempManager;
     switch (promptType) {
         case PromptType::Translation:
-            return tempManager.getDefaultTranslationPrompt();
+            return SettingsManager().getDefaultTranslationPrompt();
         case PromptType::Report:
-            return tempManager.getDefaultReportPrompt();
+            return SettingsManager().getDefaultReportPrompt();
         case PromptType::Feedback:
-            return tempManager.getDefaultFeedbackPrompt();
+            return SettingsManager().getDefaultFeedbackPrompt();
         default:
             return QString();
     }

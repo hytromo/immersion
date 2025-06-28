@@ -10,12 +10,17 @@
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
 #include "NetworkRequestManager.h"
+#include "AppConfig.h"
 
 #include <QMainWindow>
 #include <QSettings>
 #include <QDialog>
 #include <QDate>
 #include <QLocale>
+#include <QScopedPointer>
+#include <QSharedPointer>
+#include <QShortcut>
+#include <QAction>
 #include <functional>
 
 QT_BEGIN_NAMESPACE
@@ -31,6 +36,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+    
+    // Public helper methods for window management
+    void centerWindowOnScreen();
+    bool isWindowOnScreen() const;
 
 private slots:
     // UI Event Handlers
@@ -57,23 +66,20 @@ private slots:
 
 private:
     // UI Components
-    Ui::MainWindow *ui;
+    QScopedPointer<Ui::MainWindow> ui;
     
-    // Managers
-    KeychainManager *keychain;
-    AppDataManager *appDataManager;
-    SettingsManager *settingsManager;
-    SpellChecker *spellChecker;
-    NetworkRequestManager *networkManager;
+    // Managers - using smart pointers for better memory management
+    QScopedPointer<KeychainManager> keychain;
+    QScopedPointer<AppDataManager> appDataManager;
+    QScopedPointer<SettingsManager> settingsManager;
+    QScopedPointer<SpellChecker> spellChecker;
+    QScopedPointer<NetworkRequestManager> networkManager;
+    
+    // Smart pointers for dynamically created objects
+    QScopedPointer<QShortcut> goButtonShortcut;
     
     // State
     QString openaiApiKey;
-
-    // Constants
-    static const QString OPENAI_API_KEY_KEYCHAIN_KEY;
-    static const int MAX_HISTORY_SIZE;
-    static const int SPELL_CHECK_DELAY_MS;
-    static const int MAX_HISTORY_DISPLAY_LENGTH;
 
     // Initialization Methods
     void initializeUI();
@@ -83,7 +89,7 @@ private:
     // API Key Management
     void retrieveOpenAIApiKey();
     void requestApiKeyPopup();
-    bool validateApiKey();
+    bool validateApiKey() const;
     
     // UI Setup
     void setupHistoryMenu();
@@ -106,6 +112,12 @@ private:
                          void (SettingsManager::*setter)(const QString &));
     void editPromptSetting(PromptType promptType, const QString &currentPrompt,
                           void (SettingsManager::*setter)(const QString &));
+    
+    // New helper methods for better code organization
+    void handleTranslationResponse(const QString &translation, const QString &inputText);
+    void handleTranslationError(const QString &errorString);
+    void handleFeedbackResponse(const QString &feedback);
+    void handleFeedbackError(const QString &errorString);
 };
 
 #endif // MAINWINDOW_H
