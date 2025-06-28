@@ -4,6 +4,9 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QMessageBox>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QRect>
 
 int main(int argc, char *argv[])
 {
@@ -24,6 +27,36 @@ int main(int argc, char *argv[])
 
     MainWindow w;
     w.show();
+    
+    // Start listening for messages from other instances
+    singleInstance.startListening();
+    
+    // Connect the signal to bring window to front
+    QObject::connect(&singleInstance, &SingleInstance::bringToFrontRequested, [&w]() {
+        w.show();
+        w.raise();
+        w.activateWindow();
+        
+        // Move to center of screen if minimized
+        if (w.windowState() == Qt::WindowMinimized) {
+            w.setWindowState(Qt::WindowNoState);
+        }
+        
+        // Ensure it's visible on the current screen
+        QScreen *currentScreen = QGuiApplication::primaryScreen();
+        if (currentScreen) {
+            QRect screenGeometry = currentScreen->geometry();
+            QRect windowGeometry = w.geometry();
+            
+            // If window is outside visible area, center it
+            if (!screenGeometry.intersects(windowGeometry)) {
+                w.move(
+                    screenGeometry.center().x() - windowGeometry.width() / 2,
+                    screenGeometry.center().y() - windowGeometry.height() / 2
+                );
+            }
+        }
+    });
     
     return a.exec();
 }

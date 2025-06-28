@@ -12,11 +12,17 @@ const QString SingleInstance::SHARED_MEMORY_KEY = "immersion_single_instance";
 SingleInstance::SingleInstance(QObject *parent)
     : QObject(parent)
     , m_sharedMemory(nullptr)
+    , m_messageCheckTimer(nullptr)
 {
 }
 
 SingleInstance::~SingleInstance()
 {
+    if (m_messageCheckTimer) {
+        m_messageCheckTimer->stop();
+        delete m_messageCheckTimer;
+    }
+    
     if (m_sharedMemory) {
         m_sharedMemory->detach();
         delete m_sharedMemory;
@@ -53,50 +59,67 @@ bool SingleInstance::tryToRun()
         return false;
     }
     
+    // Initialize the shared memory with 0
+    m_sharedMemory->lock();
+    memset(m_sharedMemory->data(), 0, SHARED_MEMORY_SIZE);
+    m_sharedMemory->unlock();
+    
     return true;
+}
+
+void SingleInstance::startListening()
+{
+    if (!m_sharedMemory) {
+        return;
+    }
+    
+    // Create a timer to periodically check for messages
+    m_messageCheckTimer = new QTimer(this);
+    connect(m_messageCheckTimer, &QTimer::timeout, this, &SingleInstance::checkForMessages);
+    m_messageCheckTimer->start(100); // Check every 100ms
+}
+
+void SingleInstance::checkForMessages()
+{
+    if (!m_sharedMemory) {
+        return;
+    }
+    
+    m_sharedMemory->lock();
+    int message = 0;
+    memcpy(&message, m_sharedMemory->data(), sizeof(int));
+    
+    if (message == BRING_TO_FRONT_MESSAGE) {
+        // Clear the message
+        memset(m_sharedMemory->data(), 0, SHARED_MEMORY_SIZE);
+        m_sharedMemory->unlock();
+        
+        // Emit signal to bring window to front
+        emit bringToFrontRequested();
+    } else {
+        m_sharedMemory->unlock();
+    }
 }
 
 void SingleInstance::bringExistingInstanceToFront()
 {
-    // Find all top-level widgets (windows)
-    QWidgetList widgets = QApplication::topLevelWidgets();
+    // Try to attach to the shared memory of the existing instance
+    QSharedMemory tempSharedMemory(SHARED_MEMORY_KEY);
     
-    for (QWidget *widget : widgets) {
-        QMainWindow *mainWindow = qobject_cast<QMainWindow*>(widget);
-        if (mainWindow) {
-            // Check if this is our application window by looking at the window title
-            QString windowTitle = mainWindow->windowTitle();
-            if (windowTitle.contains("Immersion", Qt::CaseInsensitive) ||
-                windowTitle.contains("immersion", Qt::CaseInsensitive) ||
-                windowTitle.isEmpty()) { // MainWindow might not have a title set yet
-                
-                // Bring window to front
-                mainWindow->show();
-                mainWindow->raise();
-                mainWindow->activateWindow();
-                
-                // Move to center of screen if minimized
-                if (mainWindow->windowState() == Qt::WindowMinimized) {
-                    mainWindow->setWindowState(Qt::WindowNoState);
-                }
-                
-                // Ensure it's visible on the current screen
-                QScreen *currentScreen = QGuiApplication::primaryScreen();
-                if (currentScreen) {
-                    QRect screenGeometry = currentScreen->geometry();
-                    QRect windowGeometry = mainWindow->geometry();
-                    
-                    // If window is outside visible area, center it
-                    if (!screenGeometry.intersects(windowGeometry)) {
-                        mainWindow->move(
-                            screenGeometry.center().x() - windowGeometry.width() / 2,
-                            screenGeometry.center().y() - windowGeometry.height() / 2
-                        );
-                    }
-                }
-                
-                break;
-            }
-        }
+    if (tempSharedMemory.attach()) {
+        // Send the bring-to-front message
+        tempSharedMemory.lock();
+        int message = BRING_TO_FRONT_MESSAGE;
+        memcpy(tempSharedMemory.data(), &message, sizeof(int));
+        tempSharedMemory.unlock();
+        
+        // Wait a bit for the message to be processed
+        QTimer::singleShot(200, [&tempSharedMemory]() {
+            tempSharedMemory.detach();
+        });
+        
+        qDebug() << "Sent bring-to-front message to existing instance";
+    } else {
+        qDebug() << "Could not attach to shared memory of existing instance";
     }
 } 
