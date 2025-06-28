@@ -11,6 +11,8 @@ const QString SETTINGS_REPORT_PROMPT_KEY = "report_prompt";
 const QString SETTINGS_FEEDBACK_PROMPT_KEY = "feedback_prompt";
 const QString SETTINGS_MESSAGE_HISTORY_KEY = "message_history";
 const int MAX_HISTORY_SIZE = 5;
+const QString SETTINGS_SPELLCHECKER_LANGUAGE_KEY = "spellCheckerLanguage";
+const QString SETTINGS_VISUAL_SPELLCHECKING_KEY = "visualSpellCheckingEnabled";
 
 // Default prompts
 const QString DEFAULT_TRANSLATION_PROMPT = "You are an expert %sourceLang to %targetLang translator. Translate this text making sure to match the tone and style of the original.";
@@ -123,4 +125,17 @@ void SettingsManager::addMessageToHistory(const QString &message) {
 
 void SettingsManager::sync() {
     settings.sync();
+}
+
+QString SettingsManager::spellCheckerLanguage() const {
+    return settings.value(SETTINGS_SPELLCHECKER_LANGUAGE_KEY, "en_US").toString();
+}
+void SettingsManager::setSpellCheckerLanguage(const QString &lang) {
+    settings.setValue(SETTINGS_SPELLCHECKER_LANGUAGE_KEY, lang);
+}
+bool SettingsManager::visualSpellCheckingEnabled() const {
+    return settings.value(SETTINGS_VISUAL_SPELLCHECKING_KEY, true).toBool();
+}
+void SettingsManager::setVisualSpellCheckingEnabled(bool enabled) {
+    settings.setValue(SETTINGS_VISUAL_SPELLCHECKING_KEY, enabled);
 } 

@@ -6,6 +6,7 @@
 #include "SettingsManager.h"
 #include "progressdialog.h"
 #include "FeedbackDialog.h"
+#include "SpellChecker.h"
 
 #include <QInputDialog>
 #include <QMessageBox>
@@ -42,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
     , keychain(new KeychainManager(this))
     , appDataManager(new AppDataManager(this))
     , settingsManager(new SettingsManager(this))
+    , spellChecker(new SpellChecker(this))
     , openaiApiKey("")
 {
     ui->setupUi(this);
@@ -67,12 +69,23 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionEditReportPrompt, SIGNAL(triggered()), this, SLOT(actionEditReportPrompt()));
     connect(ui->actionEditFeedbackPrompt, SIGNAL(triggered()), this, SLOT(actionEditFeedbackPrompt()));
     connect(ui->actionEditFeedbackModel, SIGNAL(triggered()), this, SLOT(actionEditFeedbackModel()));
+    connect(ui->actionEditSpellCheckerLanguage, SIGNAL(triggered()), this, SLOT(actionEditSpellCheckerLanguage()));
+    connect(ui->actionToggleVisualSpellChecking, SIGNAL(triggered()), this, SLOT(actionToggleVisualSpellChecking()));
     
     // Connect to application shutdown signal for graceful shutdown
     connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveSettings);
     
     setupHistoryMenu();
     setupGenerateReportMenu();
+    
+    // Load spell checker settings
+    QString savedSpellLang = settingsManager->spellCheckerLanguage();
+    bool savedVisual = settingsManager->visualSpellCheckingEnabled();
+    spellChecker->enableSpellChecking(ui->inputText);
+    spellChecker->enableVisualSpellChecking(savedVisual);
+    spellChecker->setLanguage(savedSpellLang);
+    // Update status label
+    updateSpellCheckerStatusLabel();
 }
 
 MainWindow::~MainWindow()
@@ -328,13 +341,59 @@ void MainWindow::actionEditFeedbackPrompt()
 void MainWindow::actionEditFeedbackModel()
 {
     QString currentModel = settingsManager->feedbackModelName();
-    QString newModel = QInputDialog::getText(this, "Edit Feedback Model", 
-                                           "Enter the feedback model name:", 
+    QString newModel = QInputDialog::getText(this, "Edit quick feedback model",
+                                           "Enter the quick feedback model name:",
                                            QLineEdit::Normal, currentModel);
     if (!newModel.isEmpty() && newModel != currentModel) {
         settingsManager->setFeedbackModelName(newModel);
         settingsManager->sync();
     }
+}
+
+void MainWindow::actionEditSpellCheckerLanguage()
+{
+    if (!spellChecker->isSpellCheckingAvailable()) {
+        QMessageBox::information(this, "Spell Checker", "Spell checking is not available on this platform.");
+        return;
+    }
+    
+    QStringList availableLanguages = spellChecker->getAvailableLanguages();
+    if (availableLanguages.isEmpty()) {
+        QMessageBox::information(this, "Spell Checker", "No spell checker languages available.");
+        return;
+    }
+    
+    QString currentLanguage = spellChecker->getCurrentLanguage();
+    int currentIndex = availableLanguages.indexOf(currentLanguage);
+    if (currentIndex == -1) {
+        currentIndex = 0;
+    }
+    
+    bool ok;
+    QString newLanguage = QInputDialog::getItem(this, "Edit Spell Checker Language",
+                                              "Choose spell checker language:", availableLanguages,
+                                              currentIndex, false, &ok);
+    if (ok && !newLanguage.isEmpty() && newLanguage != currentLanguage) {
+        spellChecker->setLanguage(newLanguage);
+        settingsManager->setSpellCheckerLanguage(newLanguage);
+        settingsManager->sync();
+        qDebug() << "Spell checker language changed to:" << newLanguage;
+        updateSpellCheckerStatusLabel();
+    }
+}
+
+void MainWindow::actionToggleVisualSpellChecking()
+{
+    if (!spellChecker->isSpellCheckingAvailable()) {
+        QMessageBox::information(this, "Spell Checker", "Spell checking is not available on this platform.");
+        return;
+    }
+    
+    bool currentlyEnabled = spellChecker->isVisualSpellCheckingEnabled();
+    spellChecker->enableVisualSpellChecking(!currentlyEnabled);
+    settingsManager->setVisualSpellCheckingEnabled(!currentlyEnabled);
+    settingsManager->sync();
+    updateSpellCheckerStatusLabel();
 }
 
 void MainWindow::setupHistoryMenu()
@@ -510,4 +569,69 @@ void MainWindow::generateReportForDate(const QString &dateString)
         cleanupProgressAndCommunicator(progress, openaiCommunicator);
         QMessageBox::warning(this, "Network Error", errorString);
     });
+}
+
+void MainWindow::setupSpellChecker()
+{
+    if (spellChecker->isSpellCheckingAvailable()) {
+        // Enable spell checking for the input text area
+        spellChecker->enableSpellChecking(ui->inputText);
+        
+        // Enable visual spell checking (red underlines)
+        spellChecker->enableVisualSpellChecking(true);
+        
+        // Set the language based on the source language
+        QString sourceLang = ui->sourceLang->text();
+        QString spellCheckLang = mapLanguageToSpellCheckLanguage(sourceLang);
+        spellChecker->setLanguage(spellCheckLang);
+        
+        // Update status label
+        updateSpellCheckerStatusLabel();
+        
+        settingsManager->setSpellCheckerLanguage(spellCheckLang);
+        settingsManager->setVisualSpellCheckingEnabled(spellChecker->isVisualSpellCheckingEnabled());
+        settingsManager->sync();
+        
+        qDebug() << "Spell checking enabled for language:" << spellCheckLang;
+    } else {
+        // Update status label
+        ui->spellCheckerStatus->setText("Spell checker: Not available");
+        ui->spellCheckerStatus->setStyleSheet("color: red; font-size: 10pt;");
+        
+        qDebug() << "Spell checking not available on this platform";
+    }
+}
+
+QString MainWindow::mapLanguageToSpellCheckLanguage(const QString &language)
+{
+    // Map common language names to macOS spell checker language codes
+    QMap<QString, QString> languageMap;
+    languageMap["English"] = "en_US";
+    languageMap["Danish"] = "da_DK";
+    languageMap["German"] = "de_DE";
+    languageMap["French"] = "fr_FR";
+    languageMap["Spanish"] = "es_ES";
+    languageMap["Italian"] = "it_IT";
+    languageMap["Portuguese"] = "pt_PT";
+    languageMap["Dutch"] = "nl_NL";
+    languageMap["Swedish"] = "sv_SE";
+    languageMap["Norwegian"] = "no_NO";
+    languageMap["Finnish"] = "fi_FI";
+    languageMap["Russian"] = "ru_RU";
+    languageMap["Polish"] = "pl_PL";
+    languageMap["Czech"] = "cs_CZ";
+    languageMap["Hungarian"] = "hu_HU";
+    languageMap["Turkish"] = "tr_TR";
+    languageMap["Japanese"] = "ja_JP";
+    languageMap["Korean"] = "ko_KR";
+    languageMap["Chinese"] = "zh_CN";
+    
+    return languageMap.value(language, "en_US"); // Default to English if not found
+}
+
+void MainWindow::updateSpellCheckerStatusLabel() {
+    QString lang = spellChecker->getCurrentLanguage();
+    bool visual = spellChecker->isVisualSpellCheckingEnabled();
+    ui->spellCheckerStatus->setText(QString("Spell checker: %1").arg(lang));
+    ui->spellCheckerStatus->setStyleSheet(visual ? "color: green; font-size: 10pt;" : "color: gray; font-size: 10pt;");
 }

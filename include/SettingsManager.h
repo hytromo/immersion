@@ -34,6 +34,12 @@ public:
     QStringList getMessageHistory() const;
     void addMessageToHistory(const QString &message);
     void sync();
+
+    // Spell checker settings
+    QString spellCheckerLanguage() const;
+    void setSpellCheckerLanguage(const QString &lang);
+    bool visualSpellCheckingEnabled() const;
+    void setVisualSpellCheckingEnabled(bool enabled);
 private:
     QSettings settings;
 };

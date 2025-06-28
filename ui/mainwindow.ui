@@ -69,6 +69,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="spellCheckerStatus">
+        <property name="text">
+         <string>Spell checker: Disabled</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: gray; font-size: 10pt;</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="goButton">
         <property name="text">
          <string>GO</string>
@@ -141,10 +151,18 @@
      <addaction name="actionEditReportPrompt"/>
      <addaction name="actionEditFeedbackPrompt"/>
     </widget>
+    <widget class="QMenu" name="menuEdit_spellchecking">
+     <property name="title">
+      <string>Edit spell checking</string>
+     </property>
+     <addaction name="actionEditSpellCheckerLanguage"/>
+     <addaction name="actionToggleVisualSpellChecking"/>
+    </widget>
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="separator"/>
     <addaction name="menuEdit_models"/>
     <addaction name="menuEdit_prompts"/>
+    <addaction name="menuEdit_spellchecking"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
@@ -233,6 +251,16 @@
   <action name="actionEditFeedbackPrompt">
    <property name="text">
     <string>Edit quick feedback prompt</string>
+   </property>
+  </action>
+  <action name="actionEditSpellCheckerLanguage">
+   <property name="text">
+    <string>Edit spell checker language</string>
+   </property>
+  </action>
+  <action name="actionToggleVisualSpellChecking">
+   <property name="text">
+    <string>Toggle visual spell checking</string>
    </property>
   </action>
  </widget>

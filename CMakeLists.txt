@@ -44,6 +44,8 @@ set(PROJECT_SOURCES
     include/FeedbackDialog.h
     src/SingleInstance.cpp
     include/SingleInstance.h
+    src/SpellChecker.cpp
+    include/SpellChecker.h
 )
 
 add_subdirectory("external/qtkeychain" qtkeychain_build)
@@ -77,6 +79,15 @@ endif()
 
 target_link_libraries(immersion PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
 target_link_libraries(immersion PRIVATE qt6keychain)
+
+# Add macOS-specific frameworks for spell checking
+if(APPLE)
+    find_library(APPKIT_FRAMEWORK AppKit)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
+    if(APPKIT_FRAMEWORK AND FOUNDATION_FRAMEWORK)
+        target_link_libraries(immersion PRIVATE ${APPKIT_FRAMEWORK} ${FOUNDATION_FRAMEWORK})
+    endif()
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

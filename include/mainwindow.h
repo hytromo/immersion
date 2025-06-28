@@ -8,6 +8,7 @@
 #include "ApiKeyDialog.h"
 #include "PromptEditDialog.h"
 #include "FeedbackDialog.h"
+#include "SpellChecker.h"
 
 #include <QMainWindow>
 #include <QtNetwork/QNetworkAccessManager>
@@ -58,12 +59,15 @@ private slots:
     void actionEditFeedbackPrompt();
     void onHistoryActionTriggered();
     void onGenerateReportActionTriggered();
+    void actionEditSpellCheckerLanguage();
+    void actionToggleVisualSpellChecking();
 
 private:
     Ui::MainWindow *ui;
     KeychainManager *keychain;
     AppDataManager *appDataManager;
     SettingsManager *settingsManager;
+    SpellChecker *spellChecker;
     QString openaiApiKey;
 
     void retrieveOpenAIApiKey();
@@ -75,5 +79,8 @@ private:
     QString formatDateForDisplay(const QDate &date);
     void generateReportForDate(const QString &dateString);
     void saveSettings();
+    void setupSpellChecker();
+    QString mapLanguageToSpellCheckLanguage(const QString &language);
+    void updateSpellCheckerStatusLabel();
 };
 #endif // MAINWINDOW_H
