@@ -13,6 +13,7 @@ const QString SETTINGS_MESSAGE_HISTORY_KEY = "message_history";
 const int MAX_HISTORY_SIZE = 5;
 const QString SETTINGS_SPELLCHECKER_LANGUAGE_KEY = "spellCheckerLanguage";
 const QString SETTINGS_VISUAL_SPELLCHECKING_KEY = "visualSpellCheckingEnabled";
+const QString SETTINGS_QUICK_FEEDBACK_KEY = "quickFeedbackEnabled";
 
 // Default prompts
 const QString DEFAULT_TRANSLATION_PROMPT = "You are an expert %sourceLang to %targetLang translator. Translate this text making sure to match the tone and style of the original.";
@@ -138,4 +139,10 @@ bool SettingsManager::visualSpellCheckingEnabled() const {
 }
 void SettingsManager::setVisualSpellCheckingEnabled(bool enabled) {
     settings.setValue(SETTINGS_VISUAL_SPELLCHECKING_KEY, enabled);
+}
+bool SettingsManager::quickFeedbackEnabled() const {
+    return settings.value(SETTINGS_QUICK_FEEDBACK_KEY, false).toBool();
+}
+void SettingsManager::setQuickFeedbackEnabled(bool enabled) {
+    settings.setValue(SETTINGS_QUICK_FEEDBACK_KEY, enabled);
 } 

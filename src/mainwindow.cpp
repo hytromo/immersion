@@ -86,6 +86,12 @@ MainWindow::MainWindow(QWidget *parent)
     spellChecker->setLanguage(savedSpellLang);
     // Update status label
     updateSpellCheckerStatusLabel();
+
+    ui->quickFeedbackCheckBox->setChecked(settingsManager->quickFeedbackEnabled());
+    connect(ui->quickFeedbackCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        settingsManager->setQuickFeedbackEnabled(checked);
+        settingsManager->sync();
+    });
 }
 
 MainWindow::~MainWindow()

@@ -40,6 +40,9 @@ public:
     void setSpellCheckerLanguage(const QString &lang);
     bool visualSpellCheckingEnabled() const;
     void setVisualSpellCheckingEnabled(bool enabled);
+
+    bool quickFeedbackEnabled() const;
+    void setQuickFeedbackEnabled(bool enabled);
 private:
     QSettings settings;
 };

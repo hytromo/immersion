@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>663</width>
-    <height>258</height>
+    <height>481</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,11 +18,8 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <layout class="QVBoxLayout" name="verticalLayout"/>
-    </item>
-    <item row="1" column="1">
-     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,999">
+    <item row="2" column="0">
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0">
       <property name="sizeConstraint">
        <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
       </property>
@@ -31,7 +28,7 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Source Lang</string>
+           <string>From</string>
           </property>
          </widget>
         </item>
@@ -45,7 +42,7 @@
         <item>
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Target Lang</string>
+           <string>to</string>
           </property>
          </widget>
         </item>
@@ -59,38 +56,72 @@
        </layout>
       </item>
       <item>
-       <widget class="QPlainTextEdit" name="inputText">
-        <property name="styleSheet">
-         <string notr="true">font-size: 14pt;</string>
-        </property>
-        <property name="plainText">
-         <string>Hej jeg heder Alex. Hvad hedder du?</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="inputGoLayout">
+        <item>
+         <widget class="QPlainTextEdit" name="inputText">
+          <property name="styleSheet">
+           <string notr="true">font-size: 14pt;</string>
+          </property>
+          <property name="plainText">
+           <string>Hej jeg heder Alex. Hvad hedder du?</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="goFeedbackLayout">
+          <item>
+           <widget class="QPushButton" name="goButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>➤</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="statusFeedbackLayout"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </item>
       <item>
-       <widget class="QLabel" name="spellCheckerStatus">
-        <property name="text">
-         <string>Spell checker: Disabled</string>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">color: gray; font-size: 10pt;</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="goButton">
-        <property name="text">
-         <string>GO</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="quickFeedbackCheckBox">
-        <property name="text">
-         <string>Quick feedback</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QLabel" name="spellCheckerStatus">
+          <property name="styleSheet">
+           <string notr="true">color: gray; font-size: 10pt;</string>
+          </property>
+          <property name="text">
+           <string>Spell checker: Disabled</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="quickFeedbackCheckBox">
+          <property name="text">
+           <string>Quick feedback</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -124,12 +155,6 @@
      <string>Reports</string>
     </property>
     <addaction name="actionOpen_corrections_folder"/>
-    <addaction name="menuGenerateReport"/>
-   </widget>
-   <widget class="QMenu" name="menuGenerateReport">
-    <property name="title">
-     <string>Generate report</string>
-    </property>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -170,10 +195,16 @@
     </property>
     <addaction name="actionHelp"/>
    </widget>
+   <widget class="QMenu" name="menuGenerateReport">
+    <property name="title">
+     <string>Generate report</string>
+    </property>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuReports"/>
    <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
+   <addaction name="menuGenerateReport"/>
   </widget>
   <action name="actionReset_OpenAI_API_key">
    <property name="text">
