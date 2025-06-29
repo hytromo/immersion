@@ -228,8 +228,8 @@ QStringList SpellChecker::extractWords(const QString &text) const
 
 void SpellChecker::showContextMenu(const QPoint &pos)
 {
-    if (!m_textEdit || !isSpellCheckingAvailable()) {
-        qDebug() << "Context menu skipped - spell checker not available";
+    if (!m_textEdit) {
+        qDebug() << "Context menu skipped - no text edit widget";
         return;
     }
     
@@ -237,44 +237,82 @@ void SpellChecker::showContextMenu(const QPoint &pos)
     QString word = getWordAtPosition(pos);
     
     qDebug() << "Context menu for word:" << word;
-    
-    if (word.isEmpty()) {
-        qDebug() << "No word at position";
-        return;
-    }
-    
-    // Check if the word is misspelled
-    if (!isWordMisspelled(word)) {
-        qDebug() << "Word is not misspelled, not showing menu";
-        return; // Word is spelled correctly, don't show spell check menu
-    }
-    
-    qDebug() << "Showing spell check context menu for misspelled word:" << word;
-    
-    m_selectedWord = word;
-    updateContextMenu();
+    qDebug() << "Spell checker available:" << isSpellCheckingAvailable();
     
     QMenu contextMenu(m_textEdit);
     
-    // Add suggestions
-    QStringList suggestions = getSuggestionsForWord(word);
+    // Check if we have a word and if it's misspelled
+    bool hasWord = !word.isEmpty();
+    bool isMisspelled = false;
     
-    qDebug() << "Suggestions for" << word << ":" << suggestions;
-    
-    if (!suggestions.isEmpty()) {
-        for (const QString &suggestion : suggestions) {
-            QAction *action = contextMenu.addAction(suggestion);
-            connect(action, &QAction::triggered, [this, suggestion]() {
-                replaceWordWithSuggestion(suggestion);
-            });
-        }
-        contextMenu.addSeparator();
+    if (hasWord && isSpellCheckingAvailable()) {
+        isMisspelled = isWordMisspelled(word);
+        qDebug() << "Word" << word << "is misspelled:" << isMisspelled;
     }
     
-    // Add spell check actions
-    contextMenu.addAction(m_replaceAction.data());
-    contextMenu.addAction(m_addToDictAction.data());
-    contextMenu.addAction(m_ignoreAction.data());
+    if (isMisspelled) {
+        qDebug() << "Showing spell check context menu for misspelled word:" << word;
+        
+        m_selectedWord = word;
+        updateContextMenu();
+        
+        // Add suggestions
+        QStringList suggestions = getSuggestionsForWord(word);
+        
+        qDebug() << "Suggestions for" << word << ":" << suggestions;
+        
+        if (!suggestions.isEmpty()) {
+            for (const QString &suggestion : suggestions) {
+                QAction *action = contextMenu.addAction(suggestion);
+                connect(action, &QAction::triggered, [this, suggestion]() {
+                    replaceWordWithSuggestion(suggestion);
+                });
+            }
+            contextMenu.addSeparator();
+        }
+        
+        // Add spell check actions
+        contextMenu.addAction(m_replaceAction.data());
+        contextMenu.addAction(m_addToDictAction.data());
+        contextMenu.addAction(m_ignoreAction.data());
+        
+        contextMenu.addSeparator();
+    } else {
+        qDebug() << "Not showing spell check menu - hasWord:" << hasWord << "isSpellCheckingAvailable:" << isSpellCheckingAvailable() << "isMisspelled:" << isMisspelled;
+    }
+    
+    // Always add standard text editing actions
+    QAction *cutAction = contextMenu.addAction("Cut");
+    QAction *copyAction = contextMenu.addAction("Copy");
+    QAction *pasteAction = contextMenu.addAction("Paste");
+    QAction *selectAllAction = contextMenu.addAction("Select All");
+    
+    // Enable/disable actions based on current state
+    QTextCursor cursor = m_textEdit->textCursor();
+    bool hasSelection = cursor.hasSelection();
+    bool hasText = !m_textEdit->toPlainText().isEmpty();
+    
+    cutAction->setEnabled(hasSelection);
+    copyAction->setEnabled(hasSelection);
+    pasteAction->setEnabled(true); // Always enabled for paste
+    selectAllAction->setEnabled(hasText);
+    
+    // Connect standard actions
+    connect(cutAction, &QAction::triggered, [this]() {
+        m_textEdit->cut();
+    });
+    
+    connect(copyAction, &QAction::triggered, [this]() {
+        m_textEdit->copy();
+    });
+    
+    connect(pasteAction, &QAction::triggered, [this]() {
+        m_textEdit->paste();
+    });
+    
+    connect(selectAllAction, &QAction::triggered, [this]() {
+        m_textEdit->selectAll();
+    });
     
     contextMenu.exec(m_textEdit->mapToGlobal(pos));
 }
