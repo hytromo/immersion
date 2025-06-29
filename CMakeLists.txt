@@ -9,6 +9,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable additional warnings for better code quality
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 set(BUILD_WITH_QT6 "Build qtkeychain with Qt 6" ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Concurrent)
@@ -21,30 +28,49 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/ui)
 
 set(PROJECT_SOURCES
+    src/AppConfig.cpp
+    include/AppConfig.h
     src/AppDataManager.cpp
     include/AppDataManager.h
     src/OpenAICommunicator.cpp
     include/OpenAICommunicator.h
     src/SettingsManager.cpp
     include/SettingsManager.h
-    src/keychainclass.cpp
-    include/keychainclass.h
+    src/KeychainManager.cpp
+    include/KeychainManager.h
     src/main.cpp
     src/mainwindow.cpp
     include/mainwindow.h
     ui/mainwindow.ui
-    include/progressdialog.h
-    src/progressdialog.cpp
+    include/ProgressDialog.h
+    src/ProgressDialog.cpp
     ui/progressdialog.ui
     src/ApiKeyDialog.cpp
     include/ApiKeyDialog.h
     src/PromptEditDialog.cpp
     include/PromptEditDialog.h
+    src/ModelEditDialog.cpp
+    include/ModelEditDialog.h
     src/FeedbackDialog.cpp
     include/FeedbackDialog.h
     src/SingleInstance.cpp
     include/SingleInstance.h
+    src/StringUtils.cpp
+    include/StringUtils.h
 )
+
+# Add spell checker files conditionally based on platform
+if(APPLE)
+    list(APPEND PROJECT_SOURCES 
+        src/SpellChecker_macOS.mm
+        include/SpellChecker.h
+    )
+else()
+    list(APPEND PROJECT_SOURCES 
+        src/SpellChecker.cpp
+        include/SpellChecker.h
+    )
+endif()
 
 add_subdirectory("external/qtkeychain" qtkeychain_build)
 
@@ -77,6 +103,15 @@ endif()
 
 target_link_libraries(immersion PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
 target_link_libraries(immersion PRIVATE qt6keychain)
+
+# Add macOS-specific frameworks for spell checking
+if(APPLE)
+    find_library(APPKIT_FRAMEWORK AppKit)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
+    if(APPKIT_FRAMEWORK AND FOUNDATION_FRAMEWORK)
+        target_link_libraries(immersion PRIVATE ${APPKIT_FRAMEWORK} ${FOUNDATION_FRAMEWORK})
+    endif()
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

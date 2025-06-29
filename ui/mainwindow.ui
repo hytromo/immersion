@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>663</width>
-    <height>258</height>
+    <height>253</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,11 +18,8 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <layout class="QVBoxLayout" name="verticalLayout"/>
-    </item>
-    <item row="1" column="1">
-     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,999">
+    <item row="2" column="0">
+     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0">
       <property name="sizeConstraint">
        <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
       </property>
@@ -31,7 +28,7 @@
         <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Source Lang</string>
+           <string>From</string>
           </property>
          </widget>
         </item>
@@ -45,7 +42,7 @@
         <item>
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Target Lang</string>
+           <string>to</string>
           </property>
          </widget>
         </item>
@@ -59,28 +56,72 @@
        </layout>
       </item>
       <item>
-       <widget class="QPlainTextEdit" name="inputText">
-        <property name="styleSheet">
-         <string notr="true">font-size: 14pt;</string>
-        </property>
-        <property name="plainText">
-         <string>Hej jeg heder Alex. Hvad hedder du?</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="inputGoLayout">
+        <item>
+         <widget class="QPlainTextEdit" name="inputText">
+          <property name="styleSheet">
+           <string notr="true">font-size: 14pt;</string>
+          </property>
+          <property name="plainText">
+           <string>Hej jeg heder Alex. Hvad hedder du?</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="goFeedbackLayout">
+          <item>
+           <widget class="QPushButton" name="goButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>➤</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="statusFeedbackLayout"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </item>
       <item>
-       <widget class="QPushButton" name="goButton">
-        <property name="text">
-         <string>GO</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="quickFeedbackCheckBox">
-        <property name="text">
-         <string>Quick feedback</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QLabel" name="spellCheckerStatus">
+          <property name="styleSheet">
+           <string notr="true">color: gray; font-size: 10pt;</string>
+          </property>
+          <property name="text">
+           <string>Spell checker: Disabled</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="quickFeedbackCheckBox">
+          <property name="text">
+           <string>Quick feedback</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -92,7 +133,7 @@
      <x>0</x>
      <y>0</y>
      <width>663</width>
-     <height>31</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -113,38 +154,30 @@
     <property name="title">
      <string>Reports</string>
     </property>
+    <widget class="QMenu" name="menuGenerateReport">
+     <property name="title">
+      <string>Generate</string>
+     </property>
+    </widget>
     <addaction name="actionOpen_corrections_folder"/>
     <addaction name="menuGenerateReport"/>
-   </widget>
-   <widget class="QMenu" name="menuGenerateReport">
-    <property name="title">
-     <string>Generate report</string>
-    </property>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
     </property>
-    <widget class="QMenu" name="menuEdit_models">
+    <widget class="QMenu" name="menuEdit_spellchecking">
      <property name="title">
-      <string>Edit models</string>
+      <string>Spell checking</string>
      </property>
-     <addaction name="actionEditTranslationModel"/>
-     <addaction name="actionEditReportsModel"/>
-     <addaction name="actionEditFeedbackModel"/>
-    </widget>
-    <widget class="QMenu" name="menuEdit_prompts">
-     <property name="title">
-      <string>Edit prompts</string>
-     </property>
-     <addaction name="actionEditTranslationPrompt"/>
-     <addaction name="actionEditReportPrompt"/>
-     <addaction name="actionEditFeedbackPrompt"/>
+     <addaction name="actionEditSpellCheckerLanguage"/>
+     <addaction name="actionToggleVisualSpellChecking"/>
     </widget>
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="separator"/>
-    <addaction name="menuEdit_models"/>
-    <addaction name="menuEdit_prompts"/>
+    <addaction name="actionEditModels"/>
+    <addaction name="actionEditPrompts"/>
+    <addaction name="menuEdit_spellchecking"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
@@ -159,17 +192,17 @@
   </widget>
   <action name="actionReset_OpenAI_API_key">
    <property name="text">
-    <string>Reset OpenAI API key</string>
+    <string>OpenAI API key</string>
+   </property>
+  </action>
+  <action name="actionEditModels">
+   <property name="text">
+    <string>Models</string>
    </property>
   </action>
   <action name="actionOpen_corrections_folder">
    <property name="text">
-    <string>Open reports folder</string>
-   </property>
-  </action>
-  <action name="actionGenerateMistakesReport">
-   <property name="text">
-    <string>Generate report for today</string>
+    <string>Open folder</string>
    </property>
   </action>
   <action name="actionHelp">
@@ -185,21 +218,6 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
-  <action name="actionEditTranslationModel">
-   <property name="text">
-    <string>Edit translation model</string>
-   </property>
-  </action>
-  <action name="actionEditReportsModel">
-   <property name="text">
-    <string>Edit reports model</string>
-   </property>
-  </action>
-  <action name="actionEditFeedbackModel">
-   <property name="text">
-    <string>Edit feedback model</string>
-   </property>
-  </action>
   <action name="actionTest1">
    <property name="text">
     <string>Test1</string>
@@ -210,29 +228,19 @@
     <string>Test2</string>
    </property>
   </action>
-  <action name="actionEdit_translations_model">
+  <action name="actionEditPrompts">
    <property name="text">
-    <string>Edit translations model</string>
+    <string>Prompts</string>
    </property>
   </action>
-  <action name="actionEdit_reports_model">
+  <action name="actionEditSpellCheckerLanguage">
    <property name="text">
-    <string>Edit reports model</string>
+    <string>Language</string>
    </property>
   </action>
-  <action name="actionEditTranslationPrompt">
+  <action name="actionToggleVisualSpellChecking">
    <property name="text">
-    <string>Edit translation prompt</string>
-   </property>
-  </action>
-  <action name="actionEditReportPrompt">
-   <property name="text">
-    <string>Edit report prompt</string>
-   </property>
-  </action>
-  <action name="actionEditFeedbackPrompt">
-   <property name="text">
-    <string>Edit quick feedback prompt</string>
+    <string>Toggle</string>
    </property>
   </action>
  </widget>

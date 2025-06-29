@@ -1,15 +1,15 @@
-#ifndef KEYCHAINCLASS_H
-#define KEYCHAINCLASS_H
+#ifndef KEYCHAINMANAGER_H
+#define KEYCHAINMANAGER_H
 
 #include <QObject>
 
 #include <qtkeychain/keychain.h>
 
-class KeyChainClass : public QObject
+class KeychainManager : public QObject
 {
     Q_OBJECT
 public:
-    KeyChainClass(QObject *parent = nullptr);
+    KeychainManager(QObject *parent = nullptr);
 
     Q_INVOKABLE void readKey(const QString &key);
     Q_INVOKABLE void writeKey(const QString &key, const QString &value);
@@ -27,4 +27,4 @@ private:
     QKeychain::DeletePasswordJob m_deleteCredentialJob;
 };
 
-#endif // KEYCHAINCLASS_H
+#endif // KEYCHAINMANAGER_H

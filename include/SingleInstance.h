@@ -5,6 +5,7 @@
 #include <QSharedMemory>
 #include <QTimer>
 #include <QWindow>
+#include <QScopedPointer>
 
 class SingleInstance : public QObject
 {
@@ -26,8 +27,8 @@ private slots:
     void checkForMessages();
 
 private:
-    QSharedMemory *m_sharedMemory;
-    QTimer *m_messageCheckTimer;
+    QScopedPointer<QSharedMemory> m_sharedMemory;
+    QScopedPointer<QTimer> m_messageCheckTimer;
     static const QString SHARED_MEMORY_KEY;
     static const int SHARED_MEMORY_SIZE = 4; // Enough for a simple message
     static const int BRING_TO_FRONT_MESSAGE = 1;

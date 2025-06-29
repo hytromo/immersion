@@ -18,15 +18,7 @@ SingleInstance::SingleInstance(QObject *parent)
 
 SingleInstance::~SingleInstance()
 {
-    if (m_messageCheckTimer) {
-        m_messageCheckTimer->stop();
-        delete m_messageCheckTimer;
-    }
-    
-    if (m_sharedMemory) {
-        m_sharedMemory->detach();
-        delete m_sharedMemory;
-    }
+    // Smart pointers handle cleanup automatically
 }
 
 bool SingleInstance::isAnotherInstanceRunning()
@@ -41,21 +33,19 @@ bool SingleInstance::isAnotherInstanceRunning()
 
 bool SingleInstance::tryToRun()
 {
-    m_sharedMemory = new QSharedMemory(SHARED_MEMORY_KEY);
+    m_sharedMemory.reset(new QSharedMemory(SHARED_MEMORY_KEY));
     
     if (m_sharedMemory->attach()) {
         // Another instance is already running
         m_sharedMemory->detach();
-        delete m_sharedMemory;
-        m_sharedMemory = nullptr;
+        m_sharedMemory.reset();
         return false;
     }
     
     // Create the shared memory segment
     if (!m_sharedMemory->create(SHARED_MEMORY_SIZE)) {
         // Failed to create shared memory, another instance might be running
-        delete m_sharedMemory;
-        m_sharedMemory = nullptr;
+        m_sharedMemory.reset();
         return false;
     }
     
@@ -74,8 +64,8 @@ void SingleInstance::startListening()
     }
     
     // Create a timer to periodically check for messages
-    m_messageCheckTimer = new QTimer(this);
-    connect(m_messageCheckTimer, &QTimer::timeout, this, &SingleInstance::checkForMessages);
+    m_messageCheckTimer.reset(new QTimer(this));
+    connect(m_messageCheckTimer.data(), &QTimer::timeout, this, &SingleInstance::checkForMessages);
     m_messageCheckTimer->start(100); // Check every 100ms
 }
 

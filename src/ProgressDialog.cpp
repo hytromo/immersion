@@ -1,4 +1,4 @@
-#include "progressdialog.h"
+#include "ProgressDialog.h"
 #include "ui_progressdialog.h"
 
 ProgressDialog::ProgressDialog(QWidget *parent)
@@ -6,6 +6,8 @@ ProgressDialog::ProgressDialog(QWidget *parent)
     , ui(new Ui::ProgressDialog)
 {
     ui->setupUi(this);
+    setModal(true);
+    setWindowTitle("Processing...");
 }
 
 ProgressDialog::~ProgressDialog()

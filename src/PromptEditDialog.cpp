@@ -1,21 +1,38 @@
 #include "PromptEditDialog.h"
+#include "SettingsManager.h"
+#include <QApplication>
+#include <QScreen>
+#include <QDebug>
 #include <QScrollArea>
 #include <QGroupBox>
 #include <QPushButton>
 #include <QHBoxLayout>
-#include "SettingsManager.h"
+#include <QLabel>
+#include <QPlainTextEdit>
+#include <QDialogButtonBox>
 
-PromptEditDialog::PromptEditDialog(PromptType type, QWidget *parent)
+PromptEditDialog::PromptEditDialog(QWidget *parent)
     : QDialog(parent)
-    , promptEdit(nullptr)
+    , translationPromptEdit(nullptr)
+    , feedbackPromptEdit(nullptr)
+    , reportPromptEdit(nullptr)
     , buttonBox(nullptr)
-    , groupBox(nullptr)
     , resetButton(nullptr)
-    , promptType(type)
 {
-    setWindowTitle("Edit " + getPromptTypeName() + " Prompt");
+    setWindowTitle("Edit Prompts");
     setModal(true);
-    resize(500, 300);
+    
+    // Set a reasonable size for the dialog
+    resize(700, 600);
+    
+    // Center the dialog on the screen
+    if (QScreen *screen = QApplication::primaryScreen()) {
+        QRect screenGeometry = screen->geometry();
+        int x = (screenGeometry.width() - width()) / 2;
+        int y = (screenGeometry.height() - height()) / 2;
+        move(x, y);
+    }
+    
     setupUI();
 }
 
@@ -23,106 +40,140 @@ void PromptEditDialog::setupUI()
 {
     auto mainLayout = new QVBoxLayout(this);
     
-    createPromptSection();
+    // Create sections for each prompt type first
+    createTranslationSection();
+    createFeedbackSection();
+    createReportSection();
     
-    // Create button layout
-    auto buttonLayout = new QHBoxLayout();
-    buttonLayout->setSpacing(10); // Add spacing between buttons
+    // Now add sections to main layout (widgets exist now)
+    mainLayout->addWidget(translationPromptEdit->parentWidget());
+    mainLayout->addWidget(feedbackPromptEdit->parentWidget());
+    mainLayout->addWidget(reportPromptEdit->parentWidget());
     
-    // Create reset button
-    resetButton = new QPushButton("Reset to Default", this);
-    resetButton->setContentsMargins(10, 10, 10, 10);
-    connect(resetButton, &QPushButton::clicked, this, &PromptEditDialog::onResetToDefault);
-    buttonLayout->addWidget(resetButton);
-    buttonLayout->addStretch();
+    // Add reset button
+    resetButton = new QPushButton("Reset to Defaults", this);
+    resetButton->setStyleSheet("QPushButton { font-size: 12pt; padding: 8px; }");
+    connect(resetButton, &QPushButton::clicked, this, &PromptEditDialog::onResetToDefaults);
+    mainLayout->addWidget(resetButton);
     
-    // Create button box
+    // Add dialog buttons
     buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(buttonBox, &QDialogButtonBox::accepted, this, &PromptEditDialog::onAccepted);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    buttonLayout->addWidget(buttonBox);
+    mainLayout->addWidget(buttonBox);
     
-    mainLayout->addWidget(groupBox);
-    mainLayout->addLayout(buttonLayout);
+    setLayout(mainLayout);
 }
 
-void PromptEditDialog::createPromptSection()
+void PromptEditDialog::createTranslationSection()
 {
-    groupBox = new QGroupBox(getPromptTypeName() + " Prompt", this);
+    auto groupBox = new QGroupBox("Translation Prompt", this);
     auto layout = new QVBoxLayout(groupBox);
     
-    auto infoLabel = new QLabel("Edit the prompt used for " + getPromptTypeName().toLower() + ". " + getVariableInfo(), this);
+    auto infoLabel = new QLabel("Edit the prompt used for translation. Use %sourceLang and %targetLang as variables.", this);
     infoLabel->setWordWrap(true);
     layout->addWidget(infoLabel);
     
-    promptEdit = new QPlainTextEdit(this);
-    promptEdit->setMinimumHeight(150);
-    layout->addWidget(promptEdit);
+    translationPromptEdit = new QPlainTextEdit(this);
+    translationPromptEdit->setMinimumHeight(120);
+    translationPromptEdit->setStyleSheet("QPlainTextEdit { font-size: 11pt; }");
+    layout->addWidget(translationPromptEdit);
 }
 
-QString PromptEditDialog::getPromptTypeName() const
+void PromptEditDialog::createFeedbackSection()
 {
-    switch (promptType) {
-        case PromptType::Translation:
-            return "Translation";
-        case PromptType::Report:
-            return "Report";
-        case PromptType::Feedback:
-            return "Feedback";
-        default:
-            return "Unknown";
+    auto groupBox = new QGroupBox("Feedback Prompt", this);
+    auto layout = new QVBoxLayout(groupBox);
+    
+    auto infoLabel = new QLabel("Edit the prompt used for quick feedback. Use %sourceLang as a variable.", this);
+    infoLabel->setWordWrap(true);
+    layout->addWidget(infoLabel);
+    
+    feedbackPromptEdit = new QPlainTextEdit(this);
+    feedbackPromptEdit->setMinimumHeight(120);
+    feedbackPromptEdit->setStyleSheet("QPlainTextEdit { font-size: 11pt; }");
+    layout->addWidget(feedbackPromptEdit);
+}
+
+void PromptEditDialog::createReportSection()
+{
+    auto groupBox = new QGroupBox("Report Prompt", this);
+    auto layout = new QVBoxLayout(groupBox);
+    
+    auto infoLabel = new QLabel("Edit the prompt used for generating reports. Use %sourceLang as a variable.", this);
+    infoLabel->setWordWrap(true);
+    layout->addWidget(infoLabel);
+    
+    reportPromptEdit = new QPlainTextEdit(this);
+    reportPromptEdit->setMinimumHeight(120);
+    reportPromptEdit->setStyleSheet("QPlainTextEdit { font-size: 11pt; }");
+    layout->addWidget(reportPromptEdit);
+}
+
+void PromptEditDialog::setTranslationPrompt(const QString &prompt)
+{
+    if (translationPromptEdit) {
+        translationPromptEdit->setPlainText(prompt);
     }
 }
 
-QString PromptEditDialog::getVariableInfo() const
+void PromptEditDialog::setFeedbackPrompt(const QString &prompt)
 {
-    switch (promptType) {
-        case PromptType::Translation:
-            return "Use %sourceLang and %targetLang as variables.";
-        case PromptType::Report:
-            return "Use %sourceLang as a variable.";
-        case PromptType::Feedback:
-            return "Use %sourceLang as a variable.";
-        default:
-            return "";
+    if (feedbackPromptEdit) {
+        feedbackPromptEdit->setPlainText(prompt);
     }
 }
 
-QString PromptEditDialog::getDefaultPrompt() const
+void PromptEditDialog::setReportPrompt(const QString &prompt)
 {
-    SettingsManager tempManager;
-    switch (promptType) {
-        case PromptType::Translation:
-            return tempManager.getDefaultTranslationPrompt();
-        case PromptType::Report:
-            return tempManager.getDefaultReportPrompt();
-        case PromptType::Feedback:
-            return tempManager.getDefaultFeedbackPrompt();
-        default:
-            return QString();
+    if (reportPromptEdit) {
+        reportPromptEdit->setPlainText(prompt);
     }
 }
 
-void PromptEditDialog::setPrompt(const QString &prompt)
+QString PromptEditDialog::getTranslationPrompt() const
 {
-    if (promptEdit) {
-        promptEdit->setPlainText(prompt);
-    }
+    return translationPromptEdit ? translationPromptEdit->toPlainText().trimmed() : QString();
 }
 
-QString PromptEditDialog::getPrompt() const
+QString PromptEditDialog::getFeedbackPrompt() const
 {
-    return promptEdit ? promptEdit->toPlainText() : QString();
+    return feedbackPromptEdit ? feedbackPromptEdit->toPlainText().trimmed() : QString();
+}
+
+QString PromptEditDialog::getReportPrompt() const
+{
+    return reportPromptEdit ? reportPromptEdit->toPlainText().trimmed() : QString();
 }
 
 void PromptEditDialog::onAccepted()
 {
+    // Validate that all prompts are not empty
+    if (getTranslationPrompt().isEmpty() || getFeedbackPrompt().isEmpty() || getReportPrompt().isEmpty()) {
+        return; // Don't accept if any prompt is empty
+    }
     accept();
 }
 
-void PromptEditDialog::onResetToDefault()
+void PromptEditDialog::onResetToDefaults()
 {
-    if (promptEdit) {
-        promptEdit->setPlainText(getDefaultPrompt());
-    }
+    qDebug() << "Reset prompts to defaults clicked!";
+    
+    // Add visual feedback
+    resetButton->setText("Resetting...");
+    resetButton->setEnabled(false);
+    
+    // Create SettingsManager instance to get default values
+    SettingsManager settingsManager;
+    
+    // Reset the values using defaults from SettingsManager
+    setTranslationPrompt(settingsManager.getDefaultTranslationPrompt());
+    setFeedbackPrompt(settingsManager.getDefaultFeedbackPrompt());
+    setReportPrompt(settingsManager.getDefaultReportPrompt());
+    
+    // Restore button state
+    resetButton->setText("Reset to Defaults");
+    resetButton->setEnabled(true);
+    
+    qDebug() << "Prompt reset complete.";
 } 

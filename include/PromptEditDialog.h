@@ -10,38 +10,36 @@
 #include <QDialogButtonBox>
 #include <QGroupBox>
 
-enum class PromptType {
-    Translation,
-    Report,
-    Feedback
-};
-
 class PromptEditDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit PromptEditDialog(PromptType type, QWidget *parent = nullptr);
+    explicit PromptEditDialog(QWidget *parent = nullptr);
     
-    void setPrompt(const QString &prompt);
-    QString getPrompt() const;
+    void setTranslationPrompt(const QString &prompt);
+    void setFeedbackPrompt(const QString &prompt);
+    void setReportPrompt(const QString &prompt);
+    
+    QString getTranslationPrompt() const;
+    QString getFeedbackPrompt() const;
+    QString getReportPrompt() const;
 
 private slots:
     void onAccepted();
-    void onResetToDefault();
+    void onResetToDefaults();
 
 private:
-    QPlainTextEdit *promptEdit;
+    QPlainTextEdit *translationPromptEdit;
+    QPlainTextEdit *feedbackPromptEdit;
+    QPlainTextEdit *reportPromptEdit;
     QDialogButtonBox *buttonBox;
-    QGroupBox *groupBox;
     QPushButton *resetButton;
-    PromptType promptType;
     
     void setupUI();
-    void createPromptSection();
-    QString getPromptTypeName() const;
-    QString getVariableInfo() const;
-    QString getDefaultPrompt() const;
+    void createTranslationSection();
+    void createFeedbackSection();
+    void createReportSection();
 };
 
 #endif // PROMPTEDITDIALOG_H 

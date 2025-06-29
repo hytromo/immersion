@@ -31,9 +31,22 @@ public:
     QString getDefaultTranslationPrompt() const;
     QString getDefaultReportPrompt() const;
     QString getDefaultFeedbackPrompt() const;
+    QString getDefaultTranslationModel() const;
+    QString getDefaultReportModel() const;
+    QString getDefaultFeedbackModel() const;
     QStringList getMessageHistory() const;
     void addMessageToHistory(const QString &message);
+    void clearMessageHistory();
     void sync();
+
+    // Spell checker settings
+    QString spellCheckerLanguage() const;
+    void setSpellCheckerLanguage(const QString &lang);
+    bool visualSpellCheckingEnabled() const;
+    void setVisualSpellCheckingEnabled(bool enabled);
+
+    bool quickFeedbackEnabled() const;
+    void setQuickFeedbackEnabled(bool enabled);
 private:
     QSettings settings;
 };
