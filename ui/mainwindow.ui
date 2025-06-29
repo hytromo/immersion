@@ -133,7 +133,7 @@
      <x>0</x>
      <y>0</y>
      <width>663</width>
-     <height>31</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -156,7 +156,7 @@
     </property>
     <widget class="QMenu" name="menuGenerateReport">
      <property name="title">
-      <string>Generate report</string>
+      <string>Generate</string>
      </property>
     </widget>
     <addaction name="actionOpen_corrections_folder"/>
@@ -168,7 +168,7 @@
     </property>
     <widget class="QMenu" name="menuEdit_spellchecking">
      <property name="title">
-      <string>Edit spell checking</string>
+      <string>Spell checking</string>
      </property>
      <addaction name="actionEditSpellCheckerLanguage"/>
      <addaction name="actionToggleVisualSpellChecking"/>
@@ -192,7 +192,7 @@
   </widget>
   <action name="actionReset_OpenAI_API_key">
    <property name="text">
-    <string>Reset OpenAI API key</string>
+    <string>OpenAI API key</string>
    </property>
   </action>
   <action name="actionEditModels">
@@ -235,12 +235,12 @@
   </action>
   <action name="actionEditSpellCheckerLanguage">
    <property name="text">
-    <string>Edit spell checker language</string>
+    <string>Language</string>
    </property>
   </action>
   <action name="actionToggleVisualSpellChecking">
    <property name="text">
-    <string>Toggle visual spell checking</string>
+    <string>Toggle</string>
    </property>
   </action>
  </widget>

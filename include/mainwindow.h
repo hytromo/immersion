@@ -10,7 +10,6 @@
 #include "ModelEditDialog.h"
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
-#include "AppConfig.h"
 #include "ProgressDialog.h"
 
 #include <QMainWindow>
@@ -22,7 +21,6 @@
 #include <QSharedPointer>
 #include <QShortcut>
 #include <QAction>
-#include <functional>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
