@@ -536,21 +536,21 @@ void MainWindow::generateReportForDate(const QString &dateString)
 void MainWindow::setupSpellChecker()
 {
     if (spellChecker->isSpellCheckingAvailable()) {
-        // Enable spell checking for the input text area
-        spellChecker->enableSpellChecking(ui->inputText);
-        
-        // Load saved settings
+        // Load saved settings first
         const QString savedSpellLang = settingsManager->spellCheckerLanguage();
         const bool savedVisual = settingsManager->visualSpellCheckingEnabled();
         
+        // Set the language BEFORE enabling spell checking for the text edit
+        qDebug() << "saved spelling language is" << savedSpellLang;
+        const QString sourceLang = ui->sourceLang->text();
+        const QString finalLanguage = savedSpellLang.isEmpty() ? mapLanguageToSpellCheckLanguage(sourceLang) : savedSpellLang;
+        spellChecker->setLanguage(finalLanguage);
+        
+        // Now enable spell checking for the input text area (after language is set)
+        spellChecker->enableSpellChecking(ui->inputText);
+        
         // Enable visual spell checking (red underlines)
         spellChecker->enableVisualSpellChecking(savedVisual);
-        
-        // Set the language based on the source language
-        const QString sourceLang = ui->sourceLang->text();
-        const QString spellCheckLang = mapLanguageToSpellCheckLanguage(sourceLang);
-        const QString finalLanguage = savedSpellLang.isEmpty() ? spellCheckLang : savedSpellLang;
-        spellChecker->setLanguage(finalLanguage);
         
         // Update status label
         updateSpellCheckerStatusLabel();

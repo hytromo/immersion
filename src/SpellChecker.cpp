@@ -82,10 +82,8 @@ void SpellChecker::enableSpellChecking(QPlainTextEdit *textEdit)
         connect(m_textEdit, &QPlainTextEdit::textChanged,
                 this, &SpellChecker::onTextChanged);
         
-        // Perform initial spell check
-        if (m_visualSpellCheckingEnabled) {
-            performSpellCheck();
-        }
+        // Note: Initial spell check will be performed when enableVisualSpellChecking is called
+        // This ensures the language is set correctly before any spell checking occurs
     }
 }
 
