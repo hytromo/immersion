@@ -166,14 +166,6 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <widget class="QMenu" name="menuEdit_models">
-     <property name="title">
-      <string>Edit models</string>
-     </property>
-     <addaction name="actionEditTranslationModel"/>
-     <addaction name="actionEditReportsModel"/>
-     <addaction name="actionEditFeedbackModel"/>
-    </widget>
     <widget class="QMenu" name="menuEdit_prompts">
      <property name="title">
       <string>Edit prompts</string>
@@ -191,7 +183,7 @@
     </widget>
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="separator"/>
-    <addaction name="menuEdit_models"/>
+    <addaction name="actionEditModels"/>
     <addaction name="menuEdit_prompts"/>
     <addaction name="menuEdit_spellchecking"/>
    </widget>
@@ -209,6 +201,11 @@
   <action name="actionReset_OpenAI_API_key">
    <property name="text">
     <string>Reset OpenAI API key</string>
+   </property>
+  </action>
+  <action name="actionEditModels">
+   <property name="text">
+    <string>Models</string>
    </property>
   </action>
   <action name="actionOpen_corrections_folder">
@@ -229,21 +226,6 @@
     <string>Ctrl+Q</string>
    </property>
   </action>
-  <action name="actionEditTranslationModel">
-   <property name="text">
-    <string>Edit translation model</string>
-   </property>
-  </action>
-  <action name="actionEditReportsModel">
-   <property name="text">
-    <string>Edit reports model</string>
-   </property>
-  </action>
-  <action name="actionEditFeedbackModel">
-   <property name="text">
-    <string>Edit feedback model</string>
-   </property>
-  </action>
   <action name="actionTest1">
    <property name="text">
     <string>Test1</string>
@@ -252,16 +234,6 @@
   <action name="actionTest2">
    <property name="text">
     <string>Test2</string>
-   </property>
-  </action>
-  <action name="actionEdit_translations_model">
-   <property name="text">
-    <string>Edit translations model</string>
-   </property>
-  </action>
-  <action name="actionEdit_reports_model">
-   <property name="text">
-    <string>Edit reports model</string>
    </property>
   </action>
   <action name="actionEditTranslationPrompt">

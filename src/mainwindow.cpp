@@ -82,12 +82,10 @@ void MainWindow::setupConnections()
     connect(ui->actionOpen_corrections_folder, &QAction::triggered, this, &MainWindow::actionOpenCorrectionsFolder);
     connect(ui->actionHelp, &QAction::triggered, this, &MainWindow::actionHelp);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::actionQuit);
-    connect(ui->actionEditTranslationModel, &QAction::triggered, this, &MainWindow::actionEditTranslationModel);
-    connect(ui->actionEditReportsModel, &QAction::triggered, this, &MainWindow::actionEditReportsModel);
+    connect(ui->actionEditModels, &QAction::triggered, this, &MainWindow::actionEditModels);
     connect(ui->actionEditTranslationPrompt, &QAction::triggered, this, &MainWindow::actionEditTranslationPrompt);
     connect(ui->actionEditReportPrompt, &QAction::triggered, this, &MainWindow::actionEditReportPrompt);
     connect(ui->actionEditFeedbackPrompt, &QAction::triggered, this, &MainWindow::actionEditFeedbackPrompt);
-    connect(ui->actionEditFeedbackModel, &QAction::triggered, this, &MainWindow::actionEditFeedbackModel);
     connect(ui->actionEditSpellCheckerLanguage, &QAction::triggered, this, &MainWindow::actionEditSpellCheckerLanguage);
     connect(ui->actionToggleVisualSpellChecking, &QAction::triggered, this, &MainWindow::actionToggleVisualSpellChecking);
     
@@ -311,18 +309,30 @@ void MainWindow::actionQuit()
     close();
 }
 
-void MainWindow::actionEditTranslationModel()
+void MainWindow::actionEditModels()
 {
-    editModelSetting(settingsManager->translationModelName(), 
-                    "Edit Translation Model", 
-                    &SettingsManager::setTranslationModelName);
-}
-
-void MainWindow::actionEditReportsModel()
-{
-    editModelSetting(settingsManager->reportModelName(), 
-                    "Edit Reports Model", 
-                    &SettingsManager::setReportModelName);
+    ModelEditDialog dialog(this);
+    dialog.setTranslationModel(settingsManager->translationModelName());
+    dialog.setFeedbackModel(settingsManager->feedbackModelName());
+    dialog.setReportModel(settingsManager->reportModelName());
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        const QString newTranslationModel = dialog.getTranslationModel();
+        const QString newFeedbackModel = dialog.getFeedbackModel();
+        const QString newReportModel = dialog.getReportModel();
+        
+        if (!newTranslationModel.isEmpty()) {
+            settingsManager->setTranslationModelName(newTranslationModel);
+        }
+        if (!newFeedbackModel.isEmpty()) {
+            settingsManager->setFeedbackModelName(newFeedbackModel);
+        }
+        if (!newReportModel.isEmpty()) {
+            settingsManager->setReportModelName(newReportModel);
+        }
+        
+        settingsManager->sync();
+    }
 }
 
 void MainWindow::actionEditTranslationPrompt()
@@ -344,13 +354,6 @@ void MainWindow::actionEditFeedbackPrompt()
     editPromptSetting(PromptType::Feedback, 
                      settingsManager->feedbackPrompt(), 
                      &SettingsManager::setFeedbackPrompt);
-}
-
-void MainWindow::actionEditFeedbackModel()
-{
-    editModelSetting(settingsManager->feedbackModelName(), 
-                    "Edit quick feedback model", 
-                    &SettingsManager::setFeedbackModelName);
 }
 
 void MainWindow::actionEditSpellCheckerLanguage()
@@ -624,18 +627,6 @@ void MainWindow::updateSpellCheckerStatusLabel() {
     const bool visual = spellChecker->isVisualSpellCheckingEnabled();
     ui->spellCheckerStatus->setText(QString("Spell checker: %1").arg(lang));
     ui->spellCheckerStatus->setStyleSheet(visual ? "color: green; font-size: 10pt;" : "color: gray; font-size: 10pt;");
-}
-
-void MainWindow::editModelSetting(const QString &currentValue, const QString &dialogTitle, 
-                                 void (SettingsManager::*setter)(const QString &))
-{
-    const QString newValue = QInputDialog::getText(this, dialogTitle, 
-                                           "Enter the model name:", 
-                                           QLineEdit::Normal, currentValue);
-    if (!newValue.isEmpty() && newValue != currentValue) {
-        (settingsManager.data()->*setter)(newValue);
-        settingsManager->sync();
-    }
 }
 
 void MainWindow::editPromptSetting(PromptType promptType, const QString &currentPrompt,

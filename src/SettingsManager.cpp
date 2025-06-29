@@ -18,8 +18,8 @@ namespace {
     
     // Default Values
     const QString DEFAULT_TRANSLATION_MODEL = "gpt-4o-mini";
-    const QString DEFAULT_REPORT_MODEL = "gpt-4o-mini";
-    const QString DEFAULT_FEEDBACK_MODEL = "gpt-4o-mini";
+    const QString DEFAULT_REPORT_MODEL = "gpt-4o";
+    const QString DEFAULT_FEEDBACK_MODEL = "gpt-4o";
     const QString DEFAULT_SOURCE_LANG = "Danish";
     const QString DEFAULT_TARGET_LANG = "English";
     const QString DEFAULT_SPELLCHECKER_LANG = "en_US";
@@ -139,6 +139,18 @@ QString SettingsManager::getDefaultReportPrompt() const {
 
 QString SettingsManager::getDefaultFeedbackPrompt() const {
     return DEFAULT_FEEDBACK_PROMPT;
+}
+
+QString SettingsManager::getDefaultTranslationModel() const {
+    return DEFAULT_TRANSLATION_MODEL;
+}
+
+QString SettingsManager::getDefaultReportModel() const {
+    return DEFAULT_REPORT_MODEL;
+}
+
+QString SettingsManager::getDefaultFeedbackModel() const {
+    return DEFAULT_FEEDBACK_MODEL;
 }
 
 // Message History Management

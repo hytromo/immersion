@@ -7,6 +7,7 @@
 #include "SettingsManager.h"
 #include "ApiKeyDialog.h"
 #include "PromptEditDialog.h"
+#include "ModelEditDialog.h"
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
 #include "AppConfig.h"
@@ -55,9 +56,7 @@ private slots:
     void actionQuit();
     
     // Settings Actions
-    void actionEditTranslationModel();
-    void actionEditReportsModel();
-    void actionEditFeedbackModel();
+    void actionEditModels();
     void actionEditTranslationPrompt();
     void actionEditReportPrompt();
     void actionEditFeedbackPrompt();

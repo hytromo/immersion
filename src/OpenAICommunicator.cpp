@@ -68,6 +68,8 @@ QJsonObject OpenAICommunicator::createRequestPayload() const {
     auto json = QJsonObject{};
     json["model"] = getModelName();
 
+    qDebug() << "Using model" << json["model"];
+
     auto messages = QJsonArray{};
     // Add the system prompt if it exists
     if (!systemPrompt.isEmpty()) {

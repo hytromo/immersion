@@ -31,6 +31,9 @@ public:
     QString getDefaultTranslationPrompt() const;
     QString getDefaultReportPrompt() const;
     QString getDefaultFeedbackPrompt() const;
+    QString getDefaultTranslationModel() const;
+    QString getDefaultReportModel() const;
+    QString getDefaultFeedbackModel() const;
     QStringList getMessageHistory() const;
     void addMessageToHistory(const QString &message);
     void clearMessageHistory();

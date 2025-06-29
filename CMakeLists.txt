@@ -49,6 +49,8 @@ set(PROJECT_SOURCES
     include/ApiKeyDialog.h
     src/PromptEditDialog.cpp
     include/PromptEditDialog.h
+    src/ModelEditDialog.cpp
+    include/ModelEditDialog.h
     src/FeedbackDialog.cpp
     include/FeedbackDialog.h
     src/SingleInstance.cpp
