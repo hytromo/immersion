@@ -247,9 +247,6 @@ bool SpellChecker::isSpellCheckingAvailable() const
 {
 #ifdef Q_OS_WIN
     return m_spellChecker != nullptr;
-#elif defined(Q_OS_MACOS)
-    // macOS implementation is in SpellChecker_macOS.mm
-    return false; // This will be overridden by the .mm file
 #else
     return false;
 #endif
@@ -273,9 +270,6 @@ QStringList SpellChecker::getAvailableLanguages() const
         langEnum->Release();
     }
     return languages;
-#elif defined(Q_OS_MACOS)
-    // macOS implementation is in SpellChecker_macOS.mm
-    return QStringList(); // This will be overridden by the .mm file
 #else
     return QStringList();
 #endif
@@ -298,9 +292,6 @@ void SpellChecker::setLanguage(const QString &language)
             m_spellChecker = checker;
         }
     }
-#elif defined(Q_OS_MACOS)
-    // macOS implementation is in SpellChecker_macOS.mm
-    Q_UNUSED(this);
 #else
     Q_UNUSED(this);
 #endif
@@ -476,9 +467,6 @@ void SpellChecker::initializeNativeSpellChecker()
             qWarning() << "Failed to create ISpellChecker even with en-US fallback, HRESULT:" << QString::number(hr, 16);
         }
     }
-#elif defined(Q_OS_MACOS)
-    // macOS implementation is in SpellChecker_macOS.mm
-    Q_UNUSED(this);
 #else
     // No spell checker available on this platform
     qDebug() << "No spell checker available on this platform";
@@ -497,9 +485,6 @@ void SpellChecker::cleanupNativeSpellChecker()
         m_spellCheckerFactory = nullptr;
     }
     CoUninitialize();
-#elif defined(Q_OS_MACOS)
-    // macOS implementation is in SpellChecker_macOS.mm
-    Q_UNUSED(this);
 #else
     // No cleanup needed on other platforms
     Q_UNUSED(this);

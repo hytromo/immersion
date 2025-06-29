@@ -53,13 +53,24 @@ set(PROJECT_SOURCES
     include/FeedbackDialog.h
     src/SingleInstance.cpp
     include/SingleInstance.h
-    src/SpellChecker.cpp
-    include/SpellChecker.h
     src/NetworkRequestManager.cpp
     include/NetworkRequestManager.h
     src/StringUtils.cpp
     include/StringUtils.h
 )
+
+# Add spell checker files conditionally based on platform
+if(APPLE)
+    list(APPEND PROJECT_SOURCES 
+        src/SpellChecker_macOS.mm
+        include/SpellChecker.h
+    )
+else()
+    list(APPEND PROJECT_SOURCES 
+        src/SpellChecker.cpp
+        include/SpellChecker.h
+    )
+endif()
 
 add_subdirectory("external/qtkeychain" qtkeychain_build)
 
@@ -83,9 +94,6 @@ elseif (APPLE)
     set(app_icon_macos "${CMAKE_CURRENT_SOURCE_DIR}/resources/Immersion.icns")
     set_source_files_properties(${app_icon_macos} PROPERTIES
            MACOSX_PACKAGE_LOCATION "Resources")
-
-    # Add macOS-specific spell checker implementation
-    list(APPEND PROJECT_SOURCES src/SpellChecker_macOS.mm)
 
     qt_add_executable(immersion MACOSX_BUNDLE MANUAL_FINALIZATION ${PROJECT_SOURCES} ${app_icon_macos})
 #! [appicon_macOS]

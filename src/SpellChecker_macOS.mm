@@ -78,10 +78,8 @@ QStringList SpellChecker::getSuggestionsForWord(const QString &word) const
     NSSpellChecker *spellChecker = static_cast<NSSpellChecker*>(m_spellChecker);
     NSString *nsWord = word.toNSString();
     
-    // Use the standard API for getting suggestions
-    NSArray *guesses = [spellChecker guessesForWordRange:NSMakeRange(0, [nsWord length]) 
-                                                 inString:nsWord 
-                                                 language:nil];
+    // Use the correct API for getting suggestions
+    NSArray *guesses = [spellChecker guessesForWord:nsWord];
     
     for (NSString *guess in guesses) {
         suggestions.append(QString::fromNSString(guess));
