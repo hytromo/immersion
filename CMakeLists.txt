@@ -53,8 +53,6 @@ set(PROJECT_SOURCES
     include/FeedbackDialog.h
     src/SingleInstance.cpp
     include/SingleInstance.h
-    src/NetworkRequestManager.cpp
-    include/NetworkRequestManager.h
     src/StringUtils.cpp
     include/StringUtils.h
 )

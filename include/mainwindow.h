@@ -9,8 +9,8 @@
 #include "PromptEditDialog.h"
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
-#include "NetworkRequestManager.h"
 #include "AppConfig.h"
+#include "ProgressDialog.h"
 
 #include <QMainWindow>
 #include <QSettings>
@@ -46,11 +46,11 @@ private slots:
     void on_goButton_clicked();
     void onHistoryActionTriggered();
     void onGenerateReportActionTriggered();
+    void finalizeRequests();
     
     // Menu Actions
     void actionReset_OpenAI_API_key();
     void actionOpenCorrectionsFolder();
-    void actionGenerateMistakesReport();
     void actionHelp();
     void actionQuit();
     
@@ -73,13 +73,21 @@ private:
     QScopedPointer<AppDataManager> appDataManager;
     QScopedPointer<SettingsManager> settingsManager;
     QScopedPointer<SpellChecker> spellChecker;
-    QScopedPointer<NetworkRequestManager> networkManager;
     
     // Smart pointers for dynamically created objects
     QScopedPointer<QShortcut> goButtonShortcut;
     
     // State
     QString openaiApiKey;
+    
+    // Parallel request tracking
+    QSharedPointer<OpenAICommunicator> translationCommunicator;
+    QSharedPointer<OpenAICommunicator> feedbackCommunicator;
+    QSharedPointer<OpenAICommunicator> reportCommunicator;
+    bool translationCompleted = false;
+    bool feedbackCompleted = false;
+    QString pendingTranslation;
+    QString pendingFeedback;
 
     // Initialization Methods
     void initializeUI();
@@ -102,7 +110,8 @@ private:
     void saveSettings();
     
     // Network Request Helpers
-    void requestQuickFeedback(const QString &inputText, const QString &sourceLang);
+    void startParallelRequests(const QString &inputText, const QString &sourceLang, const QString &targetLang);
+    void checkBothRequestsCompleted();
     
     // Utility Methods
     QString mapLanguageToSpellCheckLanguage(const QString &language) const;
@@ -112,12 +121,8 @@ private:
                          void (SettingsManager::*setter)(const QString &));
     void editPromptSetting(PromptType promptType, const QString &currentPrompt,
                           void (SettingsManager::*setter)(const QString &));
-    
-    // New helper methods for better code organization
-    void handleTranslationResponse(const QString &translation, const QString &inputText);
-    void handleTranslationError(const QString &errorString);
-    void handleFeedbackResponse(const QString &feedback);
-    void handleFeedbackError(const QString &errorString);
+
+    QScopedPointer<ProgressDialog> progressDialog;
 };
 
 #endif // MAINWINDOW_H

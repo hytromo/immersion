@@ -16,7 +16,6 @@ public:
     static const QString DEFAULT_OPENAI_MODEL;
     static const QString OPENAI_API_URL;
     static const int API_REQUEST_TIMEOUT_MS;
-    static const int API_MAX_RETRIES;
     
     // UI Configuration
     static const int MAX_HISTORY_SIZE;
@@ -29,9 +28,6 @@ public:
     
     // Keychain Configuration
     static const QString OPENAI_API_KEY_KEYCHAIN_KEY;
-    
-    // Network Configuration
-    static const int NETWORK_RETRY_DELAY_MS;
     
 private:
     // Private constructor to prevent instantiation

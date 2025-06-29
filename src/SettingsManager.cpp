@@ -27,8 +27,8 @@ namespace {
     
     // Default Prompts
     const QString DEFAULT_TRANSLATION_PROMPT = "You are an expert %sourceLang to %targetLang translator. Translate this text making sure to match the tone and style of the original.";
-    const QString DEFAULT_REPORT_PROMPT = "You are an expert %sourceLang teacher. Find the top 5 grammatical mistakes in this %sourceLang text and correct them. Format each mistake as:\n\nORIGINAL: [mistake]\nCORRECTED: [correction]\nEXPLANATION: [brief English explanation]\n\nSeparate entries with two empty lines. If fewer than 5 grammatical errors exist, include important spelling mistakes.";
-    const QString DEFAULT_FEEDBACK_PROMPT = "You are an expert %sourceLang teacher. Provide feedback on the syntax, grammar, and fluency of this %sourceLang text. Be constructive and specific. Format your response as:\n\nSYNTAX: [feedback on sentence structure]\nGRAMMAR: [feedback on grammatical correctness]\nFLUENCY: [feedback on naturalness and flow]\n\nKeep each section concise but helpful.";
+    const QString DEFAULT_REPORT_PROMPT = "You are an expert %sourceLang teacher. Find the top 5 grammatical mistakes in this %sourceLang text. Format your response as:\n\nORIGINAL: [sentence with mistakes]\nCORRECTED: [fully corrected sentence]\nEXPLANATIONS: [list of explanations for each mistake, one explanation per line, starting with dash]\n\nSeparate entries with two empty lines. If fewer than 5 grammatical errors exist, include important spelling mistakes. Keep explanations in English.";
+    const QString DEFAULT_FEEDBACK_PROMPT = "You are an expert %sourceLang teacher. Provide feedback in English on the syntax, grammar, and fluency of this %sourceLang text. Be constructive and specific. Format your response as:\n\nSYNTAX: [feedback on sentence structure]\nGRAMMAR: [feedback on grammatical correctness]\nFLUENCY: [feedback on naturalness and flow]\n\nKeep each section concise but helpful.";
 }
 
 SettingsManager::SettingsManager(QObject *parent)

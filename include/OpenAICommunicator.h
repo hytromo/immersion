@@ -20,16 +20,17 @@ public:
     
     // Configuration methods
     void setModelName(const QString &modelName);
-    void setPrompt(const QString &sourceLang, const QString &targetLang, const QString &inputText);
+    void setSystemPrompt(const QString &systemPrompt);
+    void setUserPrompt(const QString &userPrompt);
     void setPromptWithTemplate(const QString &promptTemplate, const QString &sourceLang, const QString &targetLang, const QString &inputText);
-    void setPromptRaw(const QString &prompt);
     
     // Request methods
     void sendRequest();
     void cancelRequest();
     
     // Getters
-    QString getPrompt() const;
+    QString getSystemPrompt() const;
+    QString getUserPrompt() const;
     QString getModelName() const;
     bool isRequestInProgress() const;
 
@@ -46,11 +47,10 @@ private:
     // Member variables
     QString apiKey;
     QString modelName;
-    QString prompt;
-    QString inputText;
+    QString systemPrompt;
+    QString userPrompt;
     QScopedPointer<QNetworkAccessManager> networkManager;
     QNetworkReply *currentReply = nullptr;
-    int retryCount = 0;
     
     // Helper methods
     bool validateRequest();
@@ -59,10 +59,6 @@ private:
     void handleApiError(const QJsonObject &errorObj);
     void handleSuccessfulResponse(const QJsonObject &responseObj);
     QString extractTranslationFromResponse(const QString &content) const;
-    void resetRetryCount();
-    void incrementRetryCount();
-    bool shouldRetry() const;
-    void retryRequest();
 };
 
 #endif // OPENAICOMMUNICATOR_H 

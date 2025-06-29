@@ -4,10 +4,8 @@
 #include "OpenAICommunicator.h"
 #include "AppDataManager.h"
 #include "SettingsManager.h"
-#include "ProgressDialog.h"
 #include "FeedbackDialog.h"
 #include "SpellChecker.h"
-#include "NetworkRequestManager.h"
 #include "StringUtils.h"
 #include "AppConfig.h"
 
@@ -48,7 +46,6 @@ MainWindow::MainWindow(QWidget *parent)
     , appDataManager(new AppDataManager(this))
     , settingsManager(new SettingsManager(this))
     , spellChecker(new SpellChecker(this))
-    , networkManager(new NetworkRequestManager(this))
     , openaiApiKey("")
 {
     ui->setupUi(this);
@@ -159,35 +156,6 @@ void MainWindow::actionReset_OpenAI_API_key()
     requestApiKeyPopup();
 }
 
-void MainWindow::actionGenerateMistakesReport()
-{
-    if (!validateApiKey()) {
-        return;
-    }
-    
-    const QString fileContent = appDataManager->getTodaysFileContent();
-    if (fileContent.isEmpty()) {
-        QMessageBox::warning(this, "Error", "Could not open today's file.");
-        return;
-    }
-    
-    const QString sourceLang = ui->sourceLang->text();
-    QString promptTemplate = settingsManager->reportPrompt();
-    const QString prompt = promptTemplate.replace("%sourceLang", sourceLang);
-    
-    networkManager->executeReportRequest(openaiApiKey, 
-                                       settingsManager->reportModelName(),
-                                       prompt,
-                                       fileContent,
-                                       this,
-                                       [this](const QString &report) {
-                                           appDataManager->writeMistakesReport(report);
-                                       },
-                                       [this](const QString &error) {
-                                           QMessageBox::warning(this, "Error", error);
-                                       });
-}
-
 bool MainWindow::validateApiKey() const
 {
     if (openaiApiKey.isEmpty()) {
@@ -199,14 +167,10 @@ bool MainWindow::validateApiKey() const
 
 void MainWindow::on_goButton_clicked()
 {
-    if (!ui->goButton->isEnabled()) {
+    if (!ui->goButton->isEnabled() || !validateApiKey()) {
         return;
     }
-    
-    if (!validateApiKey()) {
-        return;
-    }
-    
+
     ui->goButton->setDisabled(true);
     const QString inputText = ui->inputText->toPlainText();
     const QString sourceLang = ui->sourceLang->text();
@@ -215,79 +179,125 @@ void MainWindow::on_goButton_clicked()
     // Add message to history
     addMessageToHistory(inputText);
     
-    // Using shared pointer for better memory management - object will be deleted when last reference is gone
-    QSharedPointer<OpenAICommunicator> openaiCommunicator(new OpenAICommunicator(openaiApiKey, this));
-    openaiCommunicator->setModelName(settingsManager->translationModelName());
-    openaiCommunicator->setPromptWithTemplate(settingsManager->translationPrompt(), sourceLang, targetLang, inputText);
-    openaiCommunicator->sendRequest();
-    
-    connect(openaiCommunicator.data(), &OpenAICommunicator::replyReceived, this, 
-            [this, inputText, openaiCommunicator](const QString &translation) {
-                handleTranslationResponse(translation, inputText);
-            });
-    
-    connect(openaiCommunicator.data(), &OpenAICommunicator::errorOccurred, this, 
-            [this, openaiCommunicator](const QString &errorString) {
-                handleTranslationError(errorString);
-            });
+    // Start both translation and quick report in parallel
+    startParallelRequests(inputText, sourceLang, targetLang);
 }
 
-void MainWindow::handleTranslationResponse(const QString &translation, const QString &inputText)
+void MainWindow::startParallelRequests(const QString &inputText, const QString &sourceLang, const QString &targetLang)
 {
-    auto clipboard = QGuiApplication::clipboard();
-    clipboard->setText(translation);
-    appDataManager->writeTranslationLog(ui->inputText->toPlainText());
+    // Reset completion flags
+    translationCompleted = false;
+    feedbackCompleted = false;
+    pendingTranslation.clear();
+    pendingFeedback.clear();
+
+    // Show progress dialog
+    progressDialog.reset(new ProgressDialog(this));
+    progressDialog->setWindowTitle("Processing...");
+    progressDialog->show();
+
+    // Start translation request
+    translationCommunicator = QSharedPointer<OpenAICommunicator>(new OpenAICommunicator(openaiApiKey, this));
+    translationCommunicator->setModelName(settingsManager->translationModelName());
+    translationCommunicator->setSystemPrompt(settingsManager->translationPrompt()
+        .replace("%sourceLang", sourceLang)
+        .replace("%targetLang", targetLang));
+    translationCommunicator->setUserPrompt(inputText);
+    translationCommunicator->sendRequest();
     
-    // If quick feedback is enabled, request feedback
+    connect(translationCommunicator.data(), &OpenAICommunicator::replyReceived, this, 
+            [this, inputText](const QString &response) {
+                qDebug() << "Translation reply received";
+                // Try to parse as JSON and extract 'translation', else use as is
+                QJsonParseError parseError;
+                QJsonDocument doc = QJsonDocument::fromJson(response.toUtf8(), &parseError);
+                QString translation;
+                if (parseError.error == QJsonParseError::NoError && doc.isObject()) {
+                    translation = doc.object().value("translation").toString();
+                }
+                if (translation.isEmpty()) {
+                    translation = response;
+                }
+                pendingTranslation = translation;
+                translationCompleted = true;
+                checkBothRequestsCompleted();
+            });
+    
+    connect(translationCommunicator.data(), &OpenAICommunicator::errorOccurred, this, 
+            [this](const QString&) {
+                qDebug() << "Translation error occurred";
+                translationCompleted = true;
+                checkBothRequestsCompleted();
+            });
+    
+    // Start quick report request if enabled
     if (ui->quickFeedbackCheckBox->isChecked()) {
-        requestQuickFeedback(inputText, ui->sourceLang->text());
+        feedbackCommunicator = QSharedPointer<OpenAICommunicator>(new OpenAICommunicator(openaiApiKey, this));
+        feedbackCommunicator->setModelName(settingsManager->feedbackModelName());
+        
+        QString feedbackPromptTemplate = settingsManager->feedbackPrompt();
+        const QString feedbackPrompt = feedbackPromptTemplate.replace("%sourceLang", sourceLang);
+        qDebug() << "Starting feedback request with model:" << settingsManager->feedbackModelName();
+        qDebug() << "Feedback prompt:" << feedbackPrompt;
+        feedbackCommunicator->setSystemPrompt(settingsManager->feedbackPrompt().replace("%sourceLang", sourceLang));
+        feedbackCommunicator->setUserPrompt(inputText);
+        feedbackCommunicator->sendRequest();
+        
+        connect(feedbackCommunicator.data(), &OpenAICommunicator::replyReceived, this, 
+                [this](const QString &feedback) {
+                    qDebug() << "Feedback reply received";
+                    pendingFeedback = feedback; // Always display as plain text
+                    feedbackCompleted = true;
+                    checkBothRequestsCompleted();
+                });
+        
+        connect(feedbackCommunicator.data(), &OpenAICommunicator::errorOccurred, this, 
+                [this](const QString& errorString) {
+                    qDebug() << "Feedback error occurred:" << errorString;
+                    feedbackCompleted = true;
+                    checkBothRequestsCompleted();
+                });
     } else {
-        ui->goButton->setEnabled(true);
-        hide();
+        // If quick feedback is disabled, mark it as completed
+        feedbackCompleted = true;
     }
 }
 
-void MainWindow::handleTranslationError(const QString &errorString)
+void MainWindow::checkBothRequestsCompleted()
 {
-    ui->goButton->setEnabled(true);
-    QMessageBox::warning(this, "Network Error", errorString);
+    if (translationCompleted && feedbackCompleted) {
+        QMetaObject::invokeMethod(this, "finalizeRequests", Qt::QueuedConnection);
+    }
 }
 
-void MainWindow::requestQuickFeedback(const QString &inputText, const QString &sourceLang)
+void MainWindow::finalizeRequests()
 {
-    // Using shared pointer for better memory management - object will be deleted when last reference is gone
-    QSharedPointer<OpenAICommunicator> feedbackCommunicator(new OpenAICommunicator(openaiApiKey, this));
-    feedbackCommunicator->setModelName(settingsManager->feedbackModelName());
-    
-    QString feedbackPromptTemplate = settingsManager->feedbackPrompt();
-    const QString feedbackPrompt = feedbackPromptTemplate.replace("%sourceLang", sourceLang);
-    feedbackCommunicator->setPromptRaw(feedbackPrompt + "\n\n" + inputText);
-    feedbackCommunicator->sendRequest();
-    
-    connect(feedbackCommunicator.data(), &OpenAICommunicator::replyReceived, this, 
-            [this, feedbackCommunicator](const QString &feedback) {
-                handleFeedbackResponse(feedback);
-            });
-    
-    connect(feedbackCommunicator.data(), &OpenAICommunicator::errorOccurred, this, 
-            [this, feedbackCommunicator](const QString &errorString) {
-                handleFeedbackError(errorString);
-            });
-}
+    // Close progress dialog
+    if (progressDialog) {
+        progressDialog->close();
+        progressDialog.reset();
+    }
 
-void MainWindow::handleFeedbackResponse(const QString &feedback)
-{
+    // Handle translation result
+    if (!pendingTranslation.isEmpty()) {
+        auto clipboard = QGuiApplication::clipboard();
+        clipboard->setText(pendingTranslation);
+        appDataManager->writeTranslationLog(ui->inputText->toPlainText());
+    }
+    
+    // Handle feedback result
+    if (!pendingFeedback.isEmpty()) {
+        FeedbackDialog dialog(pendingFeedback, this);
+        dialog.exec();
+    }
+    
+    // Re-enable button and hide window
     ui->goButton->setEnabled(true);
-    FeedbackDialog dialog(feedback, this);
-    dialog.exec();
     hide();
-}
-
-void MainWindow::handleFeedbackError(const QString &errorString)
-{
-    ui->goButton->setEnabled(true);
-    QMessageBox::warning(this, "Feedback Error", "Failed to get feedback: " + errorString);
-    hide();
+    
+    // Clear communicators
+    translationCommunicator.clear();
+    feedbackCommunicator.clear();
 }
 
 void MainWindow::actionHelp()
@@ -519,18 +529,30 @@ void MainWindow::generateReportForDate(const QString &dateString)
     const QString sourceLang = ui->sourceLang->text();
     QString promptTemplate = settingsManager->reportPrompt();
     const QString prompt = promptTemplate.replace("%sourceLang", sourceLang);
+
+    progressDialog.reset(new ProgressDialog(this));
+    progressDialog->setWindowTitle("Generating report...");
+    progressDialog->show();
+
+    reportCommunicator = QSharedPointer<OpenAICommunicator>(new OpenAICommunicator(openaiApiKey, this));
+    reportCommunicator->setModelName(settingsManager->reportModelName());
+    reportCommunicator->setSystemPrompt(prompt);
+    reportCommunicator->setUserPrompt(fileContent);
     
-    networkManager->executeReportRequest(openaiApiKey, 
-                                       settingsManager->reportModelName(),
-                                       prompt,
-                                       fileContent,
-                                       this,
-                                       [this, dateString](const QString &report) {
-                                           appDataManager->writeMistakesReport(report, dateString);
-                                       },
-                                       [this](const QString &error) {
-                                           QMessageBox::warning(this, "Error", error);
-                                       });
+    connect(reportCommunicator.data(), &OpenAICommunicator::replyReceived, this,
+            [this, dateString](const QString &report) {
+                appDataManager->writeMistakesReport(report, dateString);
+                QDesktopServices::openUrl(QUrl::fromLocalFile(AppDataManager::getAppDataPath()));
+                progressDialog->close();
+                progressDialog.reset();
+            });
+    connect(reportCommunicator.data(), &OpenAICommunicator::errorOccurred, this,
+            [this](const QString &error) {
+                QMessageBox::warning(this, "Error", error);
+                progressDialog->close();
+                progressDialog.reset();
+            });
+    reportCommunicator->sendRequest();
 }
 
 void MainWindow::setupSpellChecker()
