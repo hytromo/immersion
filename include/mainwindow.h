@@ -57,9 +57,7 @@ private slots:
     
     // Settings Actions
     void actionEditModels();
-    void actionEditTranslationPrompt();
-    void actionEditReportPrompt();
-    void actionEditFeedbackPrompt();
+    void actionEditPrompts();
     void actionEditSpellCheckerLanguage();
     void actionToggleVisualSpellChecking();
 
@@ -118,8 +116,6 @@ private:
     // Helper Methods for Settings Actions
     void editModelSetting(const QString &currentValue, const QString &dialogTitle, 
                          void (SettingsManager::*setter)(const QString &));
-    void editPromptSetting(PromptType promptType, const QString &currentPrompt,
-                          void (SettingsManager::*setter)(const QString &));
 
     QScopedPointer<ProgressDialog> progressDialog;
 };

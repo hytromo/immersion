@@ -166,14 +166,6 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <widget class="QMenu" name="menuEdit_prompts">
-     <property name="title">
-      <string>Edit prompts</string>
-     </property>
-     <addaction name="actionEditTranslationPrompt"/>
-     <addaction name="actionEditReportPrompt"/>
-     <addaction name="actionEditFeedbackPrompt"/>
-    </widget>
     <widget class="QMenu" name="menuEdit_spellchecking">
      <property name="title">
       <string>Edit spell checking</string>
@@ -184,7 +176,7 @@
     <addaction name="actionReset_OpenAI_API_key"/>
     <addaction name="separator"/>
     <addaction name="actionEditModels"/>
-    <addaction name="menuEdit_prompts"/>
+    <addaction name="actionEditPrompts"/>
     <addaction name="menuEdit_spellchecking"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
@@ -236,19 +228,9 @@
     <string>Test2</string>
    </property>
   </action>
-  <action name="actionEditTranslationPrompt">
+  <action name="actionEditPrompts">
    <property name="text">
-    <string>Edit translation prompt</string>
-   </property>
-  </action>
-  <action name="actionEditReportPrompt">
-   <property name="text">
-    <string>Edit report prompt</string>
-   </property>
-  </action>
-  <action name="actionEditFeedbackPrompt">
-   <property name="text">
-    <string>Edit quick feedback prompt</string>
+    <string>Prompts</string>
    </property>
   </action>
   <action name="actionEditSpellCheckerLanguage">

@@ -83,9 +83,7 @@ void MainWindow::setupConnections()
     connect(ui->actionHelp, &QAction::triggered, this, &MainWindow::actionHelp);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::actionQuit);
     connect(ui->actionEditModels, &QAction::triggered, this, &MainWindow::actionEditModels);
-    connect(ui->actionEditTranslationPrompt, &QAction::triggered, this, &MainWindow::actionEditTranslationPrompt);
-    connect(ui->actionEditReportPrompt, &QAction::triggered, this, &MainWindow::actionEditReportPrompt);
-    connect(ui->actionEditFeedbackPrompt, &QAction::triggered, this, &MainWindow::actionEditFeedbackPrompt);
+    connect(ui->actionEditPrompts, &QAction::triggered, this, &MainWindow::actionEditPrompts);
     connect(ui->actionEditSpellCheckerLanguage, &QAction::triggered, this, &MainWindow::actionEditSpellCheckerLanguage);
     connect(ui->actionToggleVisualSpellChecking, &QAction::triggered, this, &MainWindow::actionToggleVisualSpellChecking);
     
@@ -335,25 +333,30 @@ void MainWindow::actionEditModels()
     }
 }
 
-void MainWindow::actionEditTranslationPrompt()
+void MainWindow::actionEditPrompts()
 {
-    editPromptSetting(PromptType::Translation, 
-                     settingsManager->translationPrompt(), 
-                     &SettingsManager::setTranslationPrompt);
-}
-
-void MainWindow::actionEditReportPrompt()
-{
-    editPromptSetting(PromptType::Report, 
-                     settingsManager->reportPrompt(), 
-                     &SettingsManager::setReportPrompt);
-}
-
-void MainWindow::actionEditFeedbackPrompt()
-{
-    editPromptSetting(PromptType::Feedback, 
-                     settingsManager->feedbackPrompt(), 
-                     &SettingsManager::setFeedbackPrompt);
+    PromptEditDialog dialog(this);
+    dialog.setTranslationPrompt(settingsManager->translationPrompt());
+    dialog.setReportPrompt(settingsManager->reportPrompt());
+    dialog.setFeedbackPrompt(settingsManager->feedbackPrompt());
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        const QString newTranslationPrompt = dialog.getTranslationPrompt();
+        const QString newReportPrompt = dialog.getReportPrompt();
+        const QString newFeedbackPrompt = dialog.getFeedbackPrompt();
+        
+        if (!newTranslationPrompt.isEmpty()) {
+            settingsManager->setTranslationPrompt(newTranslationPrompt);
+        }
+        if (!newReportPrompt.isEmpty()) {
+            settingsManager->setReportPrompt(newReportPrompt);
+        }
+        if (!newFeedbackPrompt.isEmpty()) {
+            settingsManager->setFeedbackPrompt(newFeedbackPrompt);
+        }
+        
+        settingsManager->sync();
+    }
 }
 
 void MainWindow::actionEditSpellCheckerLanguage()
@@ -627,21 +630,6 @@ void MainWindow::updateSpellCheckerStatusLabel() {
     const bool visual = spellChecker->isVisualSpellCheckingEnabled();
     ui->spellCheckerStatus->setText(QString("Spell checker: %1").arg(lang));
     ui->spellCheckerStatus->setStyleSheet(visual ? "color: green; font-size: 10pt;" : "color: gray; font-size: 10pt;");
-}
-
-void MainWindow::editPromptSetting(PromptType promptType, const QString &currentPrompt,
-                                  void (SettingsManager::*setter)(const QString &))
-{
-    PromptEditDialog dialog(promptType, this);
-    dialog.setPrompt(currentPrompt);
-    
-    if (dialog.exec() == QDialog::Accepted) {
-        const QString newPrompt = dialog.getPrompt();
-        if (!newPrompt.isEmpty()) {
-            (settingsManager.data()->*setter)(newPrompt);
-            settingsManager->sync();
-        }
-    }
 }
 
 void MainWindow::centerWindowOnScreen()
